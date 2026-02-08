@@ -1,6 +1,6 @@
 module github.com/gnailuy/amiglot-api
 
-go 1.25.7
+go 1.24
 
 require (
 	github.com/danielgtaylor/huma/v2 v2.35.0
