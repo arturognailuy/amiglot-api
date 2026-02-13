@@ -264,3 +264,30 @@ VALUES (:match_id, :sender_id, :body);
 - Existing `users` table already present in `amiglot-api` migrations; add new tables via sequential migrations.
 - When user changes handle, update `profiles.handle` and `profiles.handle_norm`.
 - Availability slots are stored in local time + timezone; matching converts to UTC at query time, so DST shifts are handled without rewriting rows.
+
+## 3. API Contract Implementation Notes
+> Shared UI ↔ API contract lives in `amiglot-ui/designs/003-technical-specification.md`.
+
+### 3.1 Authentication & Authorization
+- Magic link auth issues access tokens; all non-public endpoints require auth.
+- Authorization checks: resource ownership for profile/languages/availability; match membership for messaging.
+- Email is only returned via `/me` and never exposed elsewhere.
+
+### 3.2 Validation & Business Rules
+- Handle uniqueness (case-insensitive); store normalized value in `profiles.handle_norm`.
+- Require at least one native language on profile creation.
+- Enforce `start_local_time < end_local_time` (wrap-around slots split into two rows).
+- `match_requests`: enforce one pending request between user pairs.
+
+### 3.3 Rate Limits & Abuse Controls (V1)
+- `/auth/magic-link`: per-IP + per-email
+- `/search`: per-user and per-IP
+- `/matches/{id}/messages`: per-user/day (per product spec)
+- Anti-spam: enforce pre-accept message limit + daily cap (configurable)
+
+### 3.4 Monitoring & Metrics
+- Health endpoints: `/healthz` (basic) + `/readyz` (db connectivity)
+- Metrics: Prometheus `/metrics` (req count, latency, errors, auth failures, rate-limit hits, DB latency, mail sends, message sends)
+- Structured logging: JSON with request_id, user_id (when available), route, status, latency
+- Tracing: OpenTelemetry spans (HTTP + DB)
+- Dashboards: p50/p95 latency by route; error rate; auth failures; DAU/signups/searches/match requests/accepts/messages; safety (block/report counts, rate-limit hits)
