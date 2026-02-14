@@ -116,7 +116,6 @@ CREATE TABLE match_requests (
   requester_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   recipient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status TEXT NOT NULL CHECK (status IN ('pending','accepted','declined','canceled')),
-  intro_message TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   responded_at TIMESTAMPTZ
 );
@@ -125,6 +124,21 @@ CREATE TABLE match_requests (
 CREATE UNIQUE INDEX match_requests_unique_pending
   ON match_requests (requester_id, recipient_id)
   WHERE status = 'pending';
+```
+
+**match_request_messages**
+Pre-accept message thread scoped to a match request. Limited to N messages per user (configurable in app). These messages are copied into the match conversation on accept.
+
+```sql
+CREATE TABLE match_request_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  match_request_id UUID NOT NULL REFERENCES match_requests(id) ON DELETE CASCADE,
+  sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX match_request_messages_req_idx ON match_request_messages(match_request_id, created_at);
 ```
 
 **matches**
@@ -239,8 +253,23 @@ WHERE p.discoverable = true
 
 **Create match request**
 ```sql
-INSERT INTO match_requests (requester_id, recipient_id, status, intro_message)
-VALUES (:requester_id, :recipient_id, 'pending', :intro_message);
+WITH req AS (
+  INSERT INTO match_requests (requester_id, recipient_id, status)
+  VALUES (:requester_id, :recipient_id, 'pending')
+  RETURNING id
+)
+-- optional initial message
+INSERT INTO match_request_messages (match_request_id, sender_id, body)
+SELECT id, :requester_id, :initial_message
+FROM req
+WHERE :initial_message IS NOT NULL;
+```
+
+**Send pre-accept message**
+```sql
+-- enforce per-user limit in app before insert
+INSERT INTO match_request_messages (match_request_id, sender_id, body)
+VALUES (:request_id, :sender_id, :body);
 ```
 
 **Accept match request**
@@ -251,7 +280,15 @@ WHERE id = :request_id AND recipient_id = :user_id;
 
 INSERT INTO matches (user_a, user_b)
 VALUES (:requester_id, :recipient_id)
-ON CONFLICT DO NOTHING;
+ON CONFLICT DO NOTHING
+RETURNING id;
+
+-- copy pre-accept messages into match conversation (preserve order)
+INSERT INTO messages (match_id, sender_id, body, created_at)
+SELECT :match_id, sender_id, body, created_at
+FROM match_request_messages
+WHERE match_request_id = :request_id
+ORDER BY created_at ASC;
 ```
 
 **Send message**
