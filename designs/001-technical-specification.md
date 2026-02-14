@@ -126,21 +126,6 @@ CREATE UNIQUE INDEX match_requests_unique_pending
   WHERE status = 'pending';
 ```
 
-**match_request_messages**
-Pre-accept message thread scoped to a match request. Limited to N messages per user (configurable in app). These messages are copied into the match conversation on accept.
-
-```sql
-CREATE TABLE match_request_messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  match_request_id UUID NOT NULL REFERENCES match_requests(id) ON DELETE CASCADE,
-  sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  body TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX match_request_messages_req_idx ON match_request_messages(match_request_id, created_at);
-```
-
 **matches**
 
 ```sql
@@ -159,20 +144,24 @@ CREATE UNIQUE INDEX matches_unique_pair
 ```
 
 **messages**
+Single table for both pre‑accept and match messages. Pre‑accept messages reference `match_request_id`. On accept, the server creates a match and re-associates those rows by setting `match_id` and clearing `match_request_id` (no copy).
 
 ```sql
 CREATE TABLE messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  match_id UUID NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+  match_id UUID REFERENCES matches(id) ON DELETE CASCADE,
+  match_request_id UUID REFERENCES match_requests(id) ON DELETE CASCADE,
   sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   body TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK ((match_id IS NOT NULL) <> (match_request_id IS NOT NULL))
 );
 
 CREATE INDEX messages_match_idx ON messages(match_id, created_at);
+CREATE INDEX messages_match_request_idx ON messages(match_request_id, created_at);
 ```
 
-> Application ensures `sender_id` belongs to the match.
+> Application ensures `sender_id` belongs to the match (or the match request for pre‑accept messages).
 
 ### 2.4 Safety & Admin (Minimal V1)
 
