@@ -16,7 +16,7 @@ cp .env.example .env.local
 ```
 
 Key variables:
-- `PORT` (default `6174`)
+- `PORT` (default `6176`)
 - `DATABASE_URL`
 - `ENV` (set to `dev` to enable magic-link dev behavior)
 - `MAGIC_LINK_BASE_URL` (where the dev login link should point)
@@ -70,7 +70,7 @@ make run
 Health check:
 
 ```bash
-curl http://localhost:6174/healthz
+curl http://localhost:6176/healthz
 ```
 
 ## Stop
@@ -106,7 +106,7 @@ docker network rm amiglot-dev-net
 3) Request a magic link:
 
 ```bash
-curl -i -X POST http://localhost:6174/auth/magic-link \
+curl -i -X POST http://localhost:6176/auth/magic-link \
   -H 'Content-Type: application/json' \
   -d '{"email":"test2@example.com"}'
 ```
@@ -116,7 +116,7 @@ You should see a `DevLoginURL` header in the response. Copy the `token` value fr
 4) Verify the magic link:
 
 ```bash
-curl -i -X POST http://localhost:6174/auth/verify \
+curl -i -X POST http://localhost:6176/auth/verify \
   -H 'Content-Type: application/json' \
   -d '{"token":"<token-from-devloginurl>"}'
 ```

@@ -19,7 +19,7 @@ type Config struct {
 func Load() Config {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "6174"
+		port = "6176"
 	}
 
 	env := os.Getenv("ENV")

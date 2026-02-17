@@ -14,8 +14,8 @@ FROM gcr.io/distroless/base-debian12:nonroot
 WORKDIR /app
 COPY --from=builder /out/amiglot-api /app/amiglot-api
 
-ENV PORT=6174
-EXPOSE 6174
+ENV PORT=6176
+EXPOSE 6176
 
 USER nonroot:nonroot
 ENTRYPOINT ["/app/amiglot-api"]

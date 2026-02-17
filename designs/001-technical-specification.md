@@ -4,7 +4,7 @@
 - Go 1.24
 - Huma (HTTP framework)
 - PostgreSQL with pgx + sqlc, migrations via goose
-- API port: 6174
+- API port: 6176
 
 > Shared UI ↔ API contract lives in `amiglot-ui/designs/003-technical-specification.md`.
 
