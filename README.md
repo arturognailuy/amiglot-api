@@ -23,8 +23,16 @@ Key variables:
 
 ## Build
 
+### Local
+
 ```bash
 go build -o bin/amiglot-api ./cmd/server
+```
+
+### Docker
+
+```bash
+docker build -t amiglot-api:dev .
 ```
 
 ## Database setup
@@ -43,10 +51,18 @@ docker run -d --name amiglot-dev-db --rm \
   postgres:16
 ```
 
-Set `DATABASE_URL` (for example):
+Set `DATABASE_URL`:
+
+- From the host:
 
 ```bash
 export DATABASE_URL="postgres://postgres:postgres@localhost:5432/amiglot_dev?sslmode=disable"
+```
+
+- From another container on the same network:
+
+```bash
+export DATABASE_URL="postgres://postgres:postgres@amiglot-dev-db:5432/amiglot_dev?sslmode=disable"
 ```
 
 Install goose (if needed):
@@ -63,8 +79,20 @@ make migrate-up
 
 ## Run
 
+### Local
+
 ```bash
 make run
+```
+
+### Docker
+
+```bash
+docker run --rm -d --name amiglot-dev-api \
+  --network amiglot-dev-net \
+  -p 6176:6176 \
+  --env-file .env.local \
+  amiglot-api:dev
 ```
 
 Health check:
