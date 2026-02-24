@@ -37,7 +37,7 @@ docker build -t amiglot-api:dev .
 
 ## Database setup
 
-You can use a local Postgres or a temporary Docker container. Example with Docker:
+Use a temporary Docker container for Postgres (same network as the API container).
 
 ```bash
 docker network create amiglot-dev-net
@@ -51,15 +51,7 @@ docker run -d --name amiglot-dev-db --rm \
   postgres:16
 ```
 
-Set `DATABASE_URL`:
-
-- From the host:
-
-```bash
-export DATABASE_URL="postgres://postgres:postgres@localhost:5432/amiglot_dev?sslmode=disable"
-```
-
-- From another container on the same network:
+Set `DATABASE_URL` (from another container on the same network):
 
 ```bash
 export DATABASE_URL="postgres://postgres:postgres@amiglot-dev-db:5432/amiglot_dev?sslmode=disable"
