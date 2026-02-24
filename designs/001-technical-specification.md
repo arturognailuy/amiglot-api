@@ -5,6 +5,7 @@
 - Huma (HTTP framework)
 - PostgreSQL with pgx + sqlc, migrations via goose
 - API port: 6176
+- Base URL path prefix: `/api/v1` (dev via Caddy: `https://test.gnailuy.com/api/v1`)
 
 > Shared UI ↔ API contract lives in `amiglot-ui/designs/003-technical-specification.md`.
 
