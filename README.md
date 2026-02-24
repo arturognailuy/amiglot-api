@@ -16,20 +16,28 @@ cp .env.example .env.local
 ```
 
 Key variables:
-- `PORT` (default `6176`)
+- `PORT` (default `6176` — set by the Dockerfile; override in `.env.local` as needed)
 - `DATABASE_URL`
 - `ENV` (set to `dev` to enable magic-link dev behavior)
 - `MAGIC_LINK_BASE_URL` (where the dev login link should point)
 
 ## Build
 
+### Local
+
 ```bash
 go build -o bin/amiglot-api ./cmd/server
 ```
 
+### Docker
+
+```bash
+docker build -t amiglot-api:dev .
+```
+
 ## Database setup
 
-You can use a local Postgres or a temporary Docker container. Example with Docker:
+Use a temporary Docker container for Postgres (same network as the API container).
 
 ```bash
 docker network create amiglot-dev-net
@@ -43,10 +51,10 @@ docker run -d --name amiglot-dev-db --rm \
   postgres:16
 ```
 
-Set `DATABASE_URL` (for example):
+Set `DATABASE_URL` (from another container on the same network):
 
 ```bash
-export DATABASE_URL="postgres://postgres:postgres@localhost:5432/amiglot_dev?sslmode=disable"
+export DATABASE_URL="postgres://postgres:postgres@amiglot-dev-db:5432/amiglot_dev?sslmode=disable"
 ```
 
 Install goose (if needed):
@@ -63,8 +71,20 @@ make migrate-up
 
 ## Run
 
+### Local
+
 ```bash
 make run
+```
+
+### Docker
+
+```bash
+docker run --rm -d --name amiglot-dev-api \
+  --network amiglot-dev-net \
+  -p 6176:6176 \
+  --env-file .env.local \
+  amiglot-api:dev
 ```
 
 Health check:
