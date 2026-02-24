@@ -16,7 +16,7 @@ cp .env.example .env.local
 ```
 
 Key variables:
-- `PORT` (default `6176`)
+- `PORT` (default `6176` — set by the Dockerfile; override in `.env.local` as needed)
 - `DATABASE_URL`
 - `ENV` (set to `dev` to enable magic-link dev behavior)
 - `MAGIC_LINK_BASE_URL` (where the dev login link should point)
