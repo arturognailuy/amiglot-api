@@ -8,6 +8,7 @@ import (
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/gnailuy/amiglot-api/internal/buildinfo"
 	"github.com/gnailuy/amiglot-api/internal/config"
 )
 
@@ -18,11 +19,33 @@ func Router(cfg config.Config, pool *pgxpool.Pool) http.Handler {
 	api := humago.New(apiMux, huma.DefaultConfig("Amiglot API", "1.0.0"))
 
 	huma.Get(api, "/healthz", func(ctx context.Context, input *struct{}) (*struct {
-		Ok bool `json:"ok"`
+		Body struct {
+			Ok           bool   `json:"ok"`
+			GitSHA       string `json:"git_sha"`
+			GitBranch    string `json:"git_branch"`
+			BuildTimeUTC string `json:"build_time_utc"`
+		} `json:""`
 	}, error) {
 		return &struct {
-			Ok bool `json:"ok"`
-		}{Ok: true}, nil
+			Body struct {
+				Ok           bool   `json:"ok"`
+				GitSHA       string `json:"git_sha"`
+				GitBranch    string `json:"git_branch"`
+				BuildTimeUTC string `json:"build_time_utc"`
+			} `json:""`
+		}{
+			Body: struct {
+				Ok           bool   `json:"ok"`
+				GitSHA       string `json:"git_sha"`
+				GitBranch    string `json:"git_branch"`
+				BuildTimeUTC string `json:"build_time_utc"`
+			}{
+				Ok:           true,
+				GitSHA:       buildinfo.GitSHA,
+				GitBranch:    buildinfo.GitBranch,
+				BuildTimeUTC: buildinfo.BuildTimeUTC,
+			},
+		}, nil
 	})
 
 	registerAuthRoutes(api, cfg, pool)

@@ -313,7 +313,7 @@ VALUES (:match_id, :sender_id, :body);
 - Anti-spam: enforce pre-accept message limit + daily cap (configurable)
 
 ### 3.4 Monitoring & Metrics
-- Health endpoints: `/healthz` (basic) + `/readyz` (db connectivity)
+- Health endpoints: `/healthz` (basic JSON + build metadata) + `/readyz` (db connectivity)
 - Metrics: Prometheus `/metrics` (req count, latency, errors, auth failures, rate-limit hits, DB latency, mail sends, message sends)
 - Structured logging: JSON with request_id, user_id (when available), route, status, latency
 - Tracing: OpenTelemetry spans (HTTP + DB)

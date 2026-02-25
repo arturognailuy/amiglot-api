@@ -93,6 +93,17 @@ Health check:
 curl http://localhost:6176/api/v1/healthz
 ```
 
+Example response:
+
+```json
+{
+  "ok": true,
+  "git_sha": "<git-sha>",
+  "git_branch": "<git-branch>",
+  "build_time_utc": "2026-02-25T17:30:00Z"
+}
+```
+
 ## Stop
 
 - Stop the API: `Ctrl+C` (foreground) or stop the process if running in the background.
