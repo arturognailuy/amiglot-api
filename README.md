@@ -31,8 +31,17 @@ go build -o bin/amiglot-api ./cmd/server
 
 ### Docker
 
+Build args (optional; defaults shown in Dockerfile):
+- `GIT_SHA` (default `dev`)
+- `GIT_BRANCH` (default `dev`)
+- `BUILD_TIME_UTC` (default `unknown`)
+
 ```bash
-docker build -t amiglot-api:dev .
+docker build -t amiglot-api:dev \
+  --build-arg GIT_SHA="$(git rev-parse HEAD)" \
+  --build-arg GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)" \
+  --build-arg BUILD_TIME_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  .
 ```
 
 ## Database setup
@@ -91,6 +100,17 @@ Health check:
 
 ```bash
 curl http://localhost:6176/api/v1/healthz
+```
+
+Example response:
+
+```json
+{
+  "ok": true,
+  "git_sha": "<git-sha>",
+  "git_branch": "<git-branch>",
+  "build_time_utc": "2026-02-25T17:30:00Z"
+}
 ```
 
 ## Stop
