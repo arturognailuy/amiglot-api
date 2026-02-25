@@ -57,6 +57,18 @@ type profileResponse struct {
 	} `json:"body"`
 }
 
+type languagesPutResponse struct {
+	Body struct {
+		Languages []languagePayload `json:"languages"`
+	} `json:"body"`
+}
+
+type availabilityPutResponse struct {
+	Body struct {
+		Availability []availabilityPayload `json:"availability"`
+	} `json:"body"`
+}
+
 type profileUpdateRequest struct {
 	UserID string `header:"X-User-Id"`
 	Body   struct {
@@ -195,9 +207,7 @@ func (h *profileHandler) putProfile(ctx context.Context, input *profileUpdateReq
 	return h.getProfile(ctx, &profileGetRequest{UserID: userID})
 }
 
-func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRequest) (*struct {
-	Languages []languagePayload `json:"languages"`
-}, error) {
+func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRequest) (*languagesPutResponse, error) {
 	if h.pool == nil {
 		return nil, huma.Error503ServiceUnavailable("database unavailable")
 	}
@@ -264,18 +274,14 @@ func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRe
 		return nil, huma.Error500InternalServerError("failed to update discoverable status")
 	}
 
-	return &struct {
-		Body struct {
+	return &languagesPutResponse{
+		Body: struct {
 			Languages []languagePayload `json:"languages"`
-		} `json:"body"`
-	}{Body: struct {
-		Languages []languagePayload `json:"languages"`
-	}{Languages: languages}}, nil
+		}{Languages: languages},
+	}, nil
 }
 
-func (h *profileHandler) putAvailability(ctx context.Context, input *availabilityPutRequest) (*struct {
-	Availability []availabilityPayload `json:"availability"`
-}, error) {
+func (h *profileHandler) putAvailability(ctx context.Context, input *availabilityPutRequest) (*availabilityPutResponse, error) {
 	if h.pool == nil {
 		return nil, huma.Error503ServiceUnavailable("database unavailable")
 	}
@@ -347,13 +353,11 @@ func (h *profileHandler) putAvailability(ctx context.Context, input *availabilit
 		return nil, huma.Error500InternalServerError("failed to save availability")
 	}
 
-	return &struct {
-		Body struct {
+	return &availabilityPutResponse{
+		Body: struct {
 			Availability []availabilityPayload `json:"availability"`
-		} `json:"body"`
-	}{Body: struct {
-		Availability []availabilityPayload `json:"availability"`
-	}{Availability: slots}}, nil
+		}{Availability: slots},
+	}, nil
 }
 
 func (h *profileHandler) loadUser(ctx context.Context, userID string) (userPayload, error) {
