@@ -61,7 +61,7 @@ func TestLanguagesValidation(t *testing.T) {
 
 	_, err = h.putLanguages(context.Background(), &languagesPutRequest{UserID: userID, Body: struct {
 		Languages []languagePayload `json:"languages"`
-	}{Languages: []languagePayload{{LanguageCode: "en", Level: 1, IsNative: false}, {LanguageCode: "en", Level: 1, IsNative: true}}}})
+	}{Languages: []languagePayload{{LanguageCode: "en", Level: 5, IsNative: true, IsTarget: false}, {LanguageCode: "en", Level: 5, IsNative: true, IsTarget: false}}}})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "duplicate language_code")
 
@@ -145,7 +145,7 @@ func TestProfileFlow_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, userID, resp.Body.User.ID)
 	require.Equal(t, "user5@example.com", resp.Body.User.Email)
-	require.Equal(t, "Arturo", resp.Body.Profile.Handle)
+	require.Equal(t, "arturo", resp.Body.Profile.Handle)
 	require.Equal(t, "America/Vancouver", resp.Body.Profile.Timezone)
 	require.True(t, resp.Body.Profile.Discoverable)
 	require.Len(t, resp.Body.Languages, 1)
@@ -200,4 +200,40 @@ func TestIsUniqueViolation(t *testing.T) {
 	err := &pgconn.PgError{Code: "23505"}
 	require.True(t, isUniqueViolation(err))
 	require.False(t, isUniqueViolation(nil))
+}
+
+func TestHandleAvailability(t *testing.T) {
+	pool := openTestPool(t)
+	defer pool.Close()
+
+	var userID string
+	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ('user7@example.com') RETURNING id`).Scan(&userID)
+	require.NoError(t, err)
+
+	var otherUserID string
+	err = pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ('user8@example.com') RETURNING id`).Scan(&otherUserID)
+	require.NoError(t, err)
+
+	h := &profileHandler{pool: pool}
+
+	_, err = h.putProfile(context.Background(), &profileUpdateRequest{UserID: userID, Body: struct {
+		Handle      string  `json:"handle"`
+		BirthYear   *int    `json:"birth_year,omitempty"`
+		BirthMonth  *int16  `json:"birth_month,omitempty"`
+		CountryCode *string `json:"country_code,omitempty"`
+		Timezone    string  `json:"timezone"`
+	}{Handle: "Arturo", Timezone: "UTC"}})
+	require.NoError(t, err)
+
+	resp, err := h.checkHandleAvailability(context.Background(), &handleCheckRequest{UserID: userID, Handle: "arturo"})
+	require.NoError(t, err)
+	require.True(t, resp.Body.Available)
+
+	resp, err = h.checkHandleAvailability(context.Background(), &handleCheckRequest{UserID: otherUserID, Handle: "arturo"})
+	require.NoError(t, err)
+	require.False(t, resp.Body.Available)
+
+	resp, err = h.checkHandleAvailability(context.Background(), &handleCheckRequest{UserID: otherUserID, Handle: "fresh"})
+	require.NoError(t, err)
+	require.True(t, resp.Body.Available)
 }

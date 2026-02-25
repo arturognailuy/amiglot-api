@@ -1,112 +1,3 @@
-package http
-
-import (
-	"context"
-	"errors"
-	"regexp"
-	"strings"
-	"time"
-
-	"github.com/danielgtaylor/huma/v2"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
-)
-
-var handlePattern = regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
-
-type profileHandler struct {
-	pool *pgxpool.Pool
-}
-
-type profilePayload struct {
-	Handle       string  `json:"handle"`
-	BirthYear    *int    `json:"birth_year,omitempty"`
-	BirthMonth   *int16  `json:"birth_month,omitempty"`
-	CountryCode  *string `json:"country_code,omitempty"`
-	Timezone     string  `json:"timezone"`
-	Discoverable bool    `json:"discoverable"`
-}
-
-type languagePayload struct {
-	LanguageCode string  `json:"language_code"`
-	Level        int16   `json:"level"`
-	IsNative     bool    `json:"is_native"`
-	IsTarget     bool    `json:"is_target"`
-	Description  *string `json:"description,omitempty"`
-}
-
-type availabilityPayload struct {
-	Weekday        int16  `json:"weekday"`
-	StartLocalTime string `json:"start_local_time"`
-	EndLocalTime   string `json:"end_local_time"`
-	Timezone       string `json:"timezone"`
-}
-
-type userPayload struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-}
-
-type profileResponse struct {
-	Body struct {
-		User         userPayload           `json:"user"`
-		Profile      profilePayload        `json:"profile"`
-		Languages    []languagePayload     `json:"languages"`
-		Availability []availabilityPayload `json:"availability"`
-	}
-}
-
-type languagesPutResponse struct {
-	Body struct {
-		Languages []languagePayload `json:"languages"`
-	}
-}
-
-type availabilityPutResponse struct {
-	Body struct {
-		Availability []availabilityPayload `json:"availability"`
-	}
-}
-
-type profileUpdateRequest struct {
-	UserID string `header:"X-User-Id"`
-	Body   struct {
-		Handle      string  `json:"handle"`
-		BirthYear   *int    `json:"birth_year,omitempty"`
-		BirthMonth  *int16  `json:"birth_month,omitempty"`
-		CountryCode *string `json:"country_code,omitempty"`
-		Timezone    string  `json:"timezone"`
-	}
-}
-
-type profileGetRequest struct {
-	UserID string `header:"X-User-Id"`
-}
-
-type languagesPutRequest struct {
-	UserID string `header:"X-User-Id"`
-	Body   struct {
-		Languages []languagePayload `json:"languages"`
-	}
-}
-
-type availabilityPutRequest struct {
-	UserID string `header:"X-User-Id"`
-	Body   struct {
-		Availability []availabilityPayload `json:"availability"`
-	}
-}
-
-func registerProfileRoutes(api huma.API, pool *pgxpool.Pool) {
-	h := &profileHandler{pool: pool}
-
-	huma.Get(api, "/profile", h.getProfile)
-	huma.Put(api, "/profile", h.putProfile)
-	huma.Put(api, "/profile/languages", h.putLanguages)
-	huma.Put(api, "/profile/availability", h.putAvailability)
-}
-
 func (h *profileHandler) getProfile(ctx context.Context, input *profileGetRequest) (*profileResponse, error) {
 	if h.pool == nil {
 		return nil, huma.Error503ServiceUnavailable("database unavailable")
@@ -155,6 +46,51 @@ func (h *profileHandler) getProfile(ctx context.Context, input *profileGetReques
 	}, nil
 }
 
+func (h *profileHandler) checkHandleAvailability(ctx context.Context, input *handleCheckRequest) (*handleCheckResponse, error) {
+	if h.pool == nil {
+		return nil, huma.Error503ServiceUnavailable("database unavailable")
+	}
+
+	userID := strings.TrimSpace(input.UserID)
+	if userID == "" {
+		return nil, huma.Error401Unauthorized("missing user id")
+	}
+
+	handle := strings.TrimSpace(input.Handle)
+	if handle == "" {
+		return nil, huma.Error400BadRequest("handle is required")
+	}
+	handle = strings.TrimPrefix(handle, "@")
+	if len(handle) < handleMinLength || len(handle) > handleMaxLength {
+		return nil, huma.Error400BadRequest("handle must be 3-20 characters")
+	}
+	if !handlePattern.MatchString(handle) {
+		return nil, huma.Error400BadRequest("handle must be alphanumeric")
+	}
+
+	handleNorm := strings.ToLower(handle)
+	var existingUserID string
+	err := h.pool.QueryRow(ctx, `SELECT user_id FROM profiles WHERE handle_norm = $1`, handleNorm).Scan(&existingUserID)
+	available := false
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			available = true
+		} else {
+			return nil, huma.Error500InternalServerError("failed to check handle")
+		}
+	} else {
+		available = existingUserID == userID
+	}
+
+	return &handleCheckResponse{
+		Body: struct {
+			Available bool `json:"available"`
+		}{Available: available},
+	}, nil
+}
+
+}
+
 func (h *profileHandler) putProfile(ctx context.Context, input *profileUpdateRequest) (*profileResponse, error) {
 	if h.pool == nil {
 		return nil, huma.Error503ServiceUnavailable("database unavailable")
@@ -170,16 +106,46 @@ func (h *profileHandler) putProfile(ctx context.Context, input *profileUpdateReq
 		return nil, huma.Error400BadRequest("handle is required")
 	}
 	handle = strings.TrimPrefix(handle, "@")
-	if !handlePattern.MatchString(handle) {
-		return nil, huma.Error400BadRequest("handle must be alphanumeric or underscore")
+	if len(handle) < handleMinLength || len(handle) > handleMaxLength {
+		return nil, huma.Error400BadRequest("handle must be 3-20 characters")
 	}
+	if !handlePattern.MatchString(handle) {
+		return nil, huma.Error400BadRequest("handle must be alphanumeric")
+	}
+	handle = strings.ToLower(handle)
 
 	timezone := strings.TrimSpace(input.Body.Timezone)
 	if timezone == "" {
 		return nil, huma.Error400BadRequest("timezone is required")
 	}
+	if _, err := time.LoadLocation(timezone); err != nil {
+		return nil, huma.Error400BadRequest("timezone is invalid")
+	}
 
-	handleNorm := strings.ToLower(handle)
+	currentYear := time.Now().UTC().Year()
+	if input.Body.BirthYear != nil {
+		if *input.Body.BirthYear < birthYearMin || *input.Body.BirthYear > currentYear {
+			return nil, huma.Error400BadRequest("birth_year must be between 1900 and current year")
+		}
+	}
+	if input.Body.BirthMonth != nil {
+		if *input.Body.BirthMonth < 1 || *input.Body.BirthMonth > 12 {
+			return nil, huma.Error400BadRequest("birth_month must be between 1 and 12")
+		}
+	}
+
+	var countryCode *string
+	if input.Body.CountryCode != nil {
+		trimmed := strings.ToUpper(strings.TrimSpace(*input.Body.CountryCode))
+		if trimmed != "" {
+			if !countryCodePattern.MatchString(trimmed) {
+				return nil, huma.Error400BadRequest("country_code must be ISO-3166 alpha-2")
+			}
+			countryCode = &trimmed
+		}
+	}
+
+	handleNorm := handle
 
 	_, err := h.pool.Exec(ctx, `
 		INSERT INTO profiles (user_id, handle, handle_norm, birth_year, birth_month, country_code, timezone)
@@ -192,7 +158,7 @@ func (h *profileHandler) putProfile(ctx context.Context, input *profileUpdateReq
 		  country_code = EXCLUDED.country_code,
 		  timezone = EXCLUDED.timezone,
 		  updated_at = now()
-	`, userID, handle, handleNorm, input.Body.BirthYear, input.Body.BirthMonth, input.Body.CountryCode, timezone)
+	`, userID, handle, handleNorm, input.Body.BirthYear, input.Body.BirthMonth, countryCode, timezone)
 	if err != nil {
 		if isUniqueViolation(err) {
 			return nil, huma.Error409Conflict("handle is already taken")
@@ -225,12 +191,24 @@ func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRe
 	seen := make(map[string]struct{})
 	nativeCount := 0
 	for _, lang := range languages {
-		code := strings.TrimSpace(lang.LanguageCode)
+		code := strings.ToLower(strings.TrimSpace(lang.LanguageCode))
 		if code == "" {
 			return nil, huma.Error400BadRequest("language_code is required")
 		}
+		if !languageCodePattern.MatchString(code) {
+			return nil, huma.Error400BadRequest("language_code must be ISO-639 (2-3 letters)")
+		}
 		if lang.Level < 0 || lang.Level > 5 {
 			return nil, huma.Error400BadRequest("level must be between 0 and 5")
+		}
+		if lang.IsNative && lang.IsTarget {
+			return nil, huma.Error400BadRequest("language cannot be both native and target")
+		}
+		if lang.IsNative != (lang.Level == 5) {
+			return nil, huma.Error400BadRequest("native level must be level 5")
+		}
+		if lang.IsTarget && lang.Level == 5 {
+			return nil, huma.Error400BadRequest("native language cannot be target")
 		}
 		if _, ok := seen[code]; ok {
 			return nil, huma.Error400BadRequest("duplicate language_code")
@@ -260,7 +238,7 @@ func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRe
 		_, err := tx.Exec(ctx, `
 			INSERT INTO user_languages (user_id, language_code, level, is_native, is_target, description)
 			VALUES ($1, $2, $3, $4, $5, $6)
-		`, userID, strings.TrimSpace(lang.LanguageCode), lang.Level, lang.IsNative, lang.IsTarget, lang.Description)
+		`, userID, strings.ToLower(strings.TrimSpace(lang.LanguageCode)), lang.Level, lang.IsNative, lang.IsTarget, lang.Description)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("failed to save languages")
 		}
@@ -300,6 +278,10 @@ func (h *profileHandler) putAvailability(ctx context.Context, input *availabilit
 	}
 
 	slots := input.Body.Availability
+	if len(slots) > 14 {
+		return nil, huma.Error400BadRequest("availability is limited to 14 slots")
+	}
+	seen := make(map[string]struct{})
 	for i := range slots {
 		if slots[i].Weekday < 0 || slots[i].Weekday > 6 {
 			return nil, huma.Error400BadRequest("weekday must be between 0 and 6")
@@ -323,8 +305,18 @@ func (h *profileHandler) putAvailability(ctx context.Context, input *availabilit
 
 		tz := strings.TrimSpace(slots[i].Timezone)
 		if tz == "" {
-			slots[i].Timezone = profile.Timezone
+			tz = profile.Timezone
 		}
+		if _, err := time.LoadLocation(tz); err != nil {
+			return nil, huma.Error400BadRequest("timezone is invalid")
+		}
+		slots[i].Timezone = tz
+	
+		key := fmt.Sprintf("%d|%s|%s|%s", slots[i].Weekday, start, end, tz)
+		if _, ok := seen[key]; ok {
+			return nil, huma.Error400BadRequest("availability slot is duplicate")
+		}
+		seen[key] = struct{}{}
 	}
 
 	tx, err := h.pool.Begin(ctx)
