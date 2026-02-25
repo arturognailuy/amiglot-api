@@ -152,9 +152,7 @@ func (h *profileHandler) putProfile(ctx context.Context, input *profileUpdateReq
 	if handle == "" {
 		return nil, huma.Error400BadRequest("handle is required")
 	}
-	if strings.HasPrefix(handle, "@") {
-		handle = strings.TrimPrefix(handle, "@")
-	}
+	handle = strings.TrimPrefix(handle, "@")
 	if !handlePattern.MatchString(handle) {
 		return nil, huma.Error400BadRequest("handle must be alphanumeric or underscore")
 	}
