@@ -23,6 +23,7 @@ Establish a unit testing baseline for the API repo and define coverage prioritie
 ## 4. Test Environment Notes
 - **Local DB:** Use the existing dev Postgres container (`amiglot-dev-db`). Set `DATABASE_URL` to that instance when running unit tests.
 - **CI DB:** GitHub Actions runs a Postgres 16 service container; `DATABASE_URL` is set accordingly.
+- **CI coverage:** `go test -coverprofile=coverage.out ./...` with a minimum total coverage threshold of 80%.
 
 ## 5. Current Status
 - ✅ Test framework baseline in place (testify).
