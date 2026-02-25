@@ -28,4 +28,3 @@ Establish a unit testing baseline for the API repo and define coverage prioritie
 - ✅ Test framework baseline in place (testify).
 - ✅ Example DB connectivity test added (requires `DATABASE_URL`).
 
-No API unit test notes were present in `designs/001-technical-specification.md` at the time of this plan.
