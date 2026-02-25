@@ -19,10 +19,6 @@ type profileHandler struct {
 	pool *pgxpool.Pool
 }
 
-type profileHeader struct {
-	UserID string `header:"X-User-Id"`
-}
-
 type profilePayload struct {
 	Handle       string  `json:"handle"`
 	BirthYear    *int    `json:"birth_year,omitempty"`
@@ -60,7 +56,7 @@ type profileResponse struct {
 }
 
 type profileUpdateRequest struct {
-	Header profileHeader
+	UserID string `header:"X-User-Id"`
 	Body   struct {
 		Handle      string  `json:"handle"`
 		BirthYear   *int    `json:"birth_year,omitempty"`
@@ -71,18 +67,18 @@ type profileUpdateRequest struct {
 }
 
 type profileGetRequest struct {
-	Header profileHeader
+	UserID string `header:"X-User-Id"`
 }
 
 type languagesPutRequest struct {
-	Header profileHeader
+	UserID string `header:"X-User-Id"`
 	Body   struct {
 		Languages []languagePayload `json:"languages"`
 	}
 }
 
 type availabilityPutRequest struct {
-	Header profileHeader
+	UserID string `header:"X-User-Id"`
 	Body   struct {
 		Availability []availabilityPayload `json:"availability"`
 	}
@@ -102,7 +98,7 @@ func (h *profileHandler) getProfile(ctx context.Context, input *profileGetReques
 		return nil, huma.Error503ServiceUnavailable("database unavailable")
 	}
 
-	userID := strings.TrimSpace(input.Header.UserID)
+	userID := strings.TrimSpace(input.UserID)
 	if userID == "" {
 		return nil, huma.Error401Unauthorized("missing user id")
 	}
@@ -143,7 +139,7 @@ func (h *profileHandler) putProfile(ctx context.Context, input *profileUpdateReq
 		return nil, huma.Error503ServiceUnavailable("database unavailable")
 	}
 
-	userID := strings.TrimSpace(input.Header.UserID)
+	userID := strings.TrimSpace(input.UserID)
 	if userID == "" {
 		return nil, huma.Error401Unauthorized("missing user id")
 	}
@@ -187,7 +183,7 @@ func (h *profileHandler) putProfile(ctx context.Context, input *profileUpdateReq
 		return nil, huma.Error500InternalServerError("failed to update discoverable status")
 	}
 
-	return h.getProfile(ctx, &profileGetRequest{Header: profileHeader{UserID: userID}})
+	return h.getProfile(ctx, &profileGetRequest{UserID: userID})
 }
 
 func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRequest) (*struct {
@@ -197,7 +193,7 @@ func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRe
 		return nil, huma.Error503ServiceUnavailable("database unavailable")
 	}
 
-	userID := strings.TrimSpace(input.Header.UserID)
+	userID := strings.TrimSpace(input.UserID)
 	if userID == "" {
 		return nil, huma.Error401Unauthorized("missing user id")
 	}
@@ -271,7 +267,7 @@ func (h *profileHandler) putAvailability(ctx context.Context, input *availabilit
 		return nil, huma.Error503ServiceUnavailable("database unavailable")
 	}
 
-	userID := strings.TrimSpace(input.Header.UserID)
+	userID := strings.TrimSpace(input.UserID)
 	if userID == "" {
 		return nil, huma.Error401Unauthorized("missing user id")
 	}
