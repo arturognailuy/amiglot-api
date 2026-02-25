@@ -13,8 +13,9 @@ import (
 
 // Router builds the HTTP routes.
 func Router(cfg config.Config, pool *pgxpool.Pool) http.Handler {
-	mux := http.NewServeMux()
-	api := humago.New(mux, huma.DefaultConfig("Amiglot API", "1.0.0"))
+	root := http.NewServeMux()
+	apiMux := http.NewServeMux()
+	api := humago.New(apiMux, huma.DefaultConfig("Amiglot API", "1.0.0"))
 
 	huma.Get(api, "/healthz", func(ctx context.Context, input *struct{}) (*struct {
 		Ok bool `json:"ok"`
@@ -26,5 +27,7 @@ func Router(cfg config.Config, pool *pgxpool.Pool) http.Handler {
 
 	registerAuthRoutes(api, cfg, pool)
 
-	return mux
+	root.Handle("/api/v1/", http.StripPrefix("/api/v1", apiMux))
+
+	return root
 }

@@ -90,7 +90,7 @@ docker run --rm -d --name amiglot-dev-api \
 Health check:
 
 ```bash
-curl http://localhost:6176/healthz
+curl http://localhost:6176/api/v1/healthz
 ```
 
 ## Stop
@@ -115,9 +115,9 @@ docker network rm amiglot-dev-net
 ## Tests
 
 ### Testable APIs
-- `GET /healthz`
-- `POST /auth/magic-link`
-- `POST /auth/verify`
+- `GET /api/v1/healthz`
+- `POST /api/v1/auth/magic-link`
+- `POST /api/v1/auth/verify`
 
 ### Test steps (dev mode)
 
@@ -126,7 +126,7 @@ docker network rm amiglot-dev-net
 3) Request a magic link:
 
 ```bash
-curl -i -X POST http://localhost:6176/auth/magic-link \
+curl -i -X POST http://localhost:6176/api/v1/auth/magic-link \
   -H 'Content-Type: application/json' \
   -d '{"email":"test2@example.com"}'
 ```
@@ -136,7 +136,7 @@ You should see a `DevLoginURL` header in the response. Copy the `token` value fr
 4) Verify the magic link:
 
 ```bash
-curl -i -X POST http://localhost:6176/auth/verify \
+curl -i -X POST http://localhost:6176/api/v1/auth/verify \
   -H 'Content-Type: application/json' \
   -d '{"token":"<token-from-devloginurl>"}'
 ```
