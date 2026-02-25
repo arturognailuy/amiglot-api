@@ -49,10 +49,12 @@ type userPayload struct {
 }
 
 type profileResponse struct {
-	User         userPayload           `json:"user"`
-	Profile      profilePayload        `json:"profile"`
-	Languages    []languagePayload     `json:"languages"`
-	Availability []availabilityPayload `json:"availability"`
+	Body struct {
+		User         userPayload           `json:"user"`
+		Profile      profilePayload        `json:"profile"`
+		Languages    []languagePayload     `json:"languages"`
+		Availability []availabilityPayload `json:"availability"`
+	} `json:"body"`
 }
 
 type profileUpdateRequest struct {
@@ -127,10 +129,17 @@ func (h *profileHandler) getProfile(ctx context.Context, input *profileGetReques
 	}
 
 	return &profileResponse{
-		User:         user,
-		Profile:      profile,
-		Languages:    languages,
-		Availability: availability,
+		Body: struct {
+			User         userPayload           `json:"user"`
+			Profile      profilePayload        `json:"profile"`
+			Languages    []languagePayload     `json:"languages"`
+			Availability []availabilityPayload `json:"availability"`
+		}{
+			User:         user,
+			Profile:      profile,
+			Languages:    languages,
+			Availability: availability,
+		},
 	}, nil
 }
 
@@ -256,8 +265,12 @@ func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRe
 	}
 
 	return &struct {
+		Body struct {
+			Languages []languagePayload `json:"languages"`
+		} `json:"body"`
+	}{Body: struct {
 		Languages []languagePayload `json:"languages"`
-	}{Languages: languages}, nil
+	}{Languages: languages}}, nil
 }
 
 func (h *profileHandler) putAvailability(ctx context.Context, input *availabilityPutRequest) (*struct {
@@ -335,8 +348,12 @@ func (h *profileHandler) putAvailability(ctx context.Context, input *availabilit
 	}
 
 	return &struct {
+		Body struct {
+			Availability []availabilityPayload `json:"availability"`
+		} `json:"body"`
+	}{Body: struct {
 		Availability []availabilityPayload `json:"availability"`
-	}{Availability: slots}, nil
+	}{Availability: slots}}, nil
 }
 
 func (h *profileHandler) loadUser(ctx context.Context, userID string) (userPayload, error) {
