@@ -78,3 +78,23 @@ func TestVerifyMagicLink_Flows(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid or expired token")
 }
+
+func TestRequestMagicLink_NoPool(t *testing.T) {
+	h := &authHandler{cfg: config.Config{MagicLinkTTL: 5 * time.Minute}, pool: nil}
+
+	_, err := h.requestMagicLink(context.Background(), &magicLinkRequest{Body: struct {
+		Email string `json:"email"`
+	}{Email: "user@example.com"}})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "database unavailable")
+}
+
+func TestVerifyMagicLink_NoPool(t *testing.T) {
+	h := &authHandler{cfg: config.Config{MagicLinkTTL: 5 * time.Minute}, pool: nil}
+
+	_, err := h.verifyMagicLink(context.Background(), &verifyRequest{Body: struct {
+		Token string `json:"token"`
+	}{Token: "token"}})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "database unavailable")
+}

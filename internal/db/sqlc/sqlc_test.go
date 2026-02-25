@@ -106,3 +106,44 @@ func resetTables(t *testing.T, pool *pgxpool.Pool) {
 		t.Fatalf("reset tables: %v", err)
 	}
 }
+
+func TestQueries_GetUserByID_UpdateUserLastLogin(t *testing.T) {
+	pool := openTestPool(t)
+	defer pool.Close()
+
+	q := New(pool)
+	user, err := q.CreateUser(context.Background(), "update@example.com")
+	require.NoError(t, err)
+
+	fetched, err := q.GetUserByID(context.Background(), user.ID)
+	require.NoError(t, err)
+	require.Equal(t, user.Email, fetched.Email)
+
+	err = q.UpdateUserLastLogin(context.Background(), user.ID)
+	require.NoError(t, err)
+
+	var lastLogin *time.Time
+	err = pool.QueryRow(context.Background(), `SELECT last_login_at FROM users WHERE id = $1`, user.ID).Scan(&lastLogin)
+	require.NoError(t, err)
+	require.NotNil(t, lastLogin)
+}
+
+func TestQueries_WithTx(t *testing.T) {
+	pool := openTestPool(t)
+	defer pool.Close()
+
+	ctx := context.Background()
+	tx, err := pool.Begin(ctx)
+	require.NoError(t, err)
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	qtx := New(pool).WithTx(tx)
+	user, err := qtx.CreateUser(ctx, "tx@example.com")
+	require.NoError(t, err)
+
+	fetched, err := qtx.GetUserByID(ctx, user.ID)
+	require.NoError(t, err)
+	require.Equal(t, user.Email, fetched.Email)
+}

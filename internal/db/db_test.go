@@ -20,3 +20,9 @@ func TestNew_PingsDatabase(t *testing.T) {
 	require.NotNil(t, pool)
 	defer pool.Close()
 }
+
+func TestNew_NoURL(t *testing.T) {
+	pool, err := New(config.Config{DatabaseURL: ""})
+	require.NoError(t, err)
+	require.Nil(t, pool)
+}
