@@ -54,19 +54,19 @@ type profileResponse struct {
 		Profile      profilePayload        `json:"profile"`
 		Languages    []languagePayload     `json:"languages"`
 		Availability []availabilityPayload `json:"availability"`
-	} `json:"body"`
+	}
 }
 
 type languagesPutResponse struct {
 	Body struct {
 		Languages []languagePayload `json:"languages"`
-	} `json:"body"`
+	}
 }
 
 type availabilityPutResponse struct {
 	Body struct {
 		Availability []availabilityPayload `json:"availability"`
-	} `json:"body"`
+	}
 }
 
 type profileUpdateRequest struct {
