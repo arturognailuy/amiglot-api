@@ -37,8 +37,10 @@ type magicLinkRequest struct {
 }
 
 type magicLinkResponse struct {
-	Ok          bool    `json:"ok"`
-	DevLoginURL *string `json:"dev_login_url,omitempty"`
+	Body struct {
+		Ok          bool    `json:"ok"`
+		DevLoginURL *string `json:"dev_login_url,omitempty"`
+	}
 }
 
 func (h *authHandler) requestMagicLink(ctx context.Context, input *magicLinkRequest) (*magicLinkResponse, error) {
@@ -80,7 +82,10 @@ func (h *authHandler) requestMagicLink(ctx context.Context, input *magicLinkRequ
 		log.Printf("magic link requested for %s", email)
 	}
 
-	return &magicLinkResponse{Ok: true, DevLoginURL: devLoginURL}, nil
+	return &magicLinkResponse{Body: struct {
+		Ok          bool    `json:"ok"`
+		DevLoginURL *string `json:"dev_login_url,omitempty"`
+	}{Ok: true, DevLoginURL: devLoginURL}}, nil
 }
 
 type verifyRequest struct {
@@ -90,11 +95,13 @@ type verifyRequest struct {
 }
 
 type verifyResponse struct {
-	AccessToken string `json:"access_token"`
-	User        struct {
-		ID    string `json:"id"`
-		Email string `json:"email"`
-	} `json:"user"`
+	Body struct {
+		AccessToken string `json:"access_token"`
+		User        struct {
+			ID    string `json:"id"`
+			Email string `json:"email"`
+		} `json:"user"`
+	}
 }
 
 func (h *authHandler) verifyMagicLink(ctx context.Context, input *verifyRequest) (*verifyResponse, error) {
@@ -154,9 +161,10 @@ func (h *authHandler) verifyMagicLink(ctx context.Context, input *verifyRequest)
 		return nil, huma.Error500InternalServerError("failed to generate access token")
 	}
 
-	resp := &verifyResponse{AccessToken: accessToken}
-	resp.User.ID = userID
-	resp.User.Email = email
+	resp := &verifyResponse{}
+	resp.Body.AccessToken = accessToken
+	resp.Body.User.ID = userID
+	resp.Body.User.Email = email
 
 	return resp, nil
 }

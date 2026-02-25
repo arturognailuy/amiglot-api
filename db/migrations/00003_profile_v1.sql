@@ -1,21 +1,4 @@
--- Schema definitions for sqlc.
-
-CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email TEXT NOT NULL UNIQUE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  last_login_at TIMESTAMPTZ
-);
-
-CREATE TABLE IF NOT EXISTS magic_link_tokens (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  token_hash BYTEA NOT NULL UNIQUE,
-  expires_at TIMESTAMPTZ NOT NULL,
-  consumed_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
+-- +goose Up
 CREATE TABLE IF NOT EXISTS profiles (
   user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   handle TEXT NOT NULL UNIQUE,
@@ -43,6 +26,9 @@ CREATE TABLE IF NOT EXISTS user_languages (
   UNIQUE (user_id, language_code)
 );
 
+CREATE INDEX IF NOT EXISTS user_languages_user_id_idx ON user_languages(user_id);
+CREATE INDEX IF NOT EXISTS user_languages_language_idx ON user_languages(language_code, level);
+
 CREATE TABLE IF NOT EXISTS availability_slots (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -53,3 +39,11 @@ CREATE TABLE IF NOT EXISTS availability_slots (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS availability_user_idx ON availability_slots(user_id);
+CREATE INDEX IF NOT EXISTS availability_local_idx ON availability_slots(weekday, start_local_time, end_local_time);
+
+-- +goose Down
+DROP TABLE IF EXISTS availability_slots;
+DROP TABLE IF EXISTS user_languages;
+DROP TABLE IF EXISTS profiles;
