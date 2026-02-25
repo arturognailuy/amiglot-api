@@ -134,6 +134,14 @@ docker network rm amiglot-dev-net
 
 ## Tests
 
+### Unit tests
+
+```bash
+make test
+```
+
+CI runs `go test -coverprofile=coverage.out ./...` and enforces a minimum total coverage of 80%.
+
 ### Testable APIs
 - `GET /api/v1/healthz`
 - `POST /api/v1/auth/magic-link`

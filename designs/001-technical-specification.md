@@ -15,7 +15,7 @@ This section defines the **database schema** for V1.
 ### 2.1 Conventions
 - **Primary keys:** UUID (`gen_random_uuid()`)
 - **Timestamps:** `timestamptz` in UTC
-- **Handles:** stored **without** `@`, UI displays with `@`
+- **Handles:** stored **without** `@`, UI displays with `@` (letters/numbers/underscore; API accepts an optional leading `@` and normalizes it away)
 - **Timezone:** IANA name (e.g., `America/Vancouver`)
 - **Languages:** BCP-47 language code (e.g., `en`, `es-ES`)
 
