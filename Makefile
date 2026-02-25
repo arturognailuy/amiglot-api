@@ -14,7 +14,7 @@ lint:
 	golangci-lint run
 
 test:
-	go test ./...
+	go test -coverprofile=coverage.out ./...
 
 sqlc:
 	sqlc generate
