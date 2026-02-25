@@ -61,4 +61,14 @@ jobs:
           version: latest
 
       - name: Test
-        run: go test ./...
+        run: go test -coverprofile=coverage.out ./...
+
+      - name: Enforce coverage threshold
+        run: |
+          coverage=$(go tool cover -func=coverage.out | awk '/total:/{print $3}')
+          echo "Total coverage: $coverage"
+          percent=${coverage%%%}
+          if awk "BEGIN {exit !($percent < 80)}"; then
+            echo "Coverage $coverage is below 80%"
+            exit 1
+          fi
