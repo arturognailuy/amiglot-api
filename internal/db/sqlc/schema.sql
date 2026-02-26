@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   discoverable BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  CHECK (handle ~ '^[a-zA-Z0-9_]+$')
+  CHECK (handle ~ '^[a-zA-Z0-9]+$')
 );
 
 CREATE TABLE IF NOT EXISTS user_languages (
