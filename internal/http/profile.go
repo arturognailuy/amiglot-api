@@ -136,12 +136,15 @@ func (h *profileHandler) getProfile(ctx context.Context, input *profileGetReques
 	}
 
 	userID := strings.TrimSpace(input.UserID)
-	if userID == "" {
+	if userID == "" || userID == "undefined" || userID == "null" {
 		return nil, huma.Error401Unauthorized("missing user id")
 	}
 
 	user, err := h.loadUser(ctx, userID)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, huma.Error401Unauthorized("invalid user id")
+		}
 		return nil, huma.Error500InternalServerError("failed to load user")
 	}
 
@@ -191,7 +194,7 @@ func (h *profileHandler) checkHandleAvailability(ctx context.Context, input *han
 	}
 
 	userID := strings.TrimSpace(input.UserID)
-	if userID == "" {
+	if userID == "" || userID == "undefined" || userID == "null" {
 		return nil, huma.Error401Unauthorized("missing user id")
 	}
 
@@ -234,7 +237,7 @@ func (h *profileHandler) putProfile(ctx context.Context, input *profileUpdateReq
 	}
 
 	userID := strings.TrimSpace(input.UserID)
-	if userID == "" {
+	if userID == "" || userID == "undefined" || userID == "null" {
 		return nil, huma.Error401Unauthorized("missing user id")
 	}
 
@@ -316,7 +319,7 @@ func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRe
 	}
 
 	userID := strings.TrimSpace(input.UserID)
-	if userID == "" {
+	if userID == "" || userID == "undefined" || userID == "null" {
 		return nil, huma.Error401Unauthorized("missing user id")
 	}
 
@@ -402,7 +405,7 @@ func (h *profileHandler) putAvailability(ctx context.Context, input *availabilit
 	}
 
 	userID := strings.TrimSpace(input.UserID)
-	if userID == "" {
+	if userID == "" || userID == "undefined" || userID == "null" {
 		return nil, huma.Error401Unauthorized("missing user id")
 	}
 
