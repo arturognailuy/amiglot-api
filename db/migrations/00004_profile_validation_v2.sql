@@ -1,4 +1,5 @@
 -- +goose Up
+-- +goose StatementBegin
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -8,6 +9,7 @@ BEGIN
       ADD CONSTRAINT profiles_handle_alnum_check CHECK (handle ~ '^[a-zA-Z0-9]+$');
   END IF;
 END $$;
+-- +goose StatementEnd
 
 -- +goose Down
 ALTER TABLE profiles
