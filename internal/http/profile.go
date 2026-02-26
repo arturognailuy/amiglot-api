@@ -1,3 +1,135 @@
+package http
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"regexp"
+	"strings"
+	"time"
+
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+const (
+	handleMinLength = 3
+	handleMaxLength = 20
+	birthYearMin    = 1900
+)
+
+var (
+	handlePattern       = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
+	languageCodePattern = regexp.MustCompile(`^[a-z]{2,3}$`)
+	countryCodePattern  = regexp.MustCompile(`^[A-Z]{2}$`)
+)
+
+type profileHandler struct {
+	pool *pgxpool.Pool
+}
+
+type profilePayload struct {
+	Handle       string  `json:"handle"`
+	BirthYear    *int    `json:"birth_year,omitempty"`
+	BirthMonth   *int16  `json:"birth_month,omitempty"`
+	CountryCode  *string `json:"country_code,omitempty"`
+	Timezone     string  `json:"timezone"`
+	Discoverable bool    `json:"discoverable"`
+}
+
+type languagePayload struct {
+	LanguageCode string  `json:"language_code"`
+	Level        int16   `json:"level"`
+	IsNative     bool    `json:"is_native"`
+	IsTarget     bool    `json:"is_target"`
+	Description  *string `json:"description,omitempty"`
+}
+
+type availabilityPayload struct {
+	Weekday        int16  `json:"weekday"`
+	StartLocalTime string `json:"start_local_time"`
+	EndLocalTime   string `json:"end_local_time"`
+	Timezone       string `json:"timezone"`
+}
+
+type userPayload struct {
+	ID    string `json:"id"`
+	Email string `json:"email"`
+}
+
+type profileResponse struct {
+	Body struct {
+		User         userPayload           `json:"user"`
+		Profile      profilePayload        `json:"profile"`
+		Languages    []languagePayload     `json:"languages"`
+		Availability []availabilityPayload `json:"availability"`
+	}
+}
+
+type languagesPutResponse struct {
+	Body struct {
+		Languages []languagePayload `json:"languages"`
+	}
+}
+
+type availabilityPutResponse struct {
+	Body struct {
+		Availability []availabilityPayload `json:"availability"`
+	}
+}
+
+type profileUpdateRequest struct {
+	UserID string `header:"X-User-Id"`
+	Body   struct {
+		Handle      string  `json:"handle"`
+		BirthYear   *int    `json:"birth_year,omitempty"`
+		BirthMonth  *int16  `json:"birth_month,omitempty"`
+		CountryCode *string `json:"country_code,omitempty"`
+		Timezone    string  `json:"timezone"`
+	}
+}
+
+type profileGetRequest struct {
+	UserID string `header:"X-User-Id"`
+}
+
+type languagesPutRequest struct {
+	UserID string `header:"X-User-Id"`
+	Body   struct {
+		Languages []languagePayload `json:"languages"`
+	}
+}
+
+type availabilityPutRequest struct {
+	UserID string `header:"X-User-Id"`
+	Body   struct {
+		Availability []availabilityPayload `json:"availability"`
+	}
+}
+
+type handleCheckRequest struct {
+	UserID string `header:"X-User-Id"`
+	Handle string `query:"handle"`
+}
+
+type handleCheckResponse struct {
+	Body struct {
+		Available bool `json:"available"`
+	}
+}
+
+func registerProfileRoutes(api huma.API, pool *pgxpool.Pool) {
+	h := &profileHandler{pool: pool}
+
+	huma.Get(api, "/profile", h.getProfile)
+	huma.Get(api, "/profile/handle/check", h.checkHandleAvailability)
+	huma.Put(api, "/profile", h.putProfile)
+	huma.Put(api, "/profile/languages", h.putLanguages)
+	huma.Put(api, "/profile/availability", h.putAvailability)
+}
+
 func (h *profileHandler) getProfile(ctx context.Context, input *profileGetRequest) (*profileResponse, error) {
 	if h.pool == nil {
 		return nil, huma.Error503ServiceUnavailable("database unavailable")
@@ -87,8 +219,6 @@ func (h *profileHandler) checkHandleAvailability(ctx context.Context, input *han
 			Available bool `json:"available"`
 		}{Available: available},
 	}, nil
-}
-
 }
 
 func (h *profileHandler) putProfile(ctx context.Context, input *profileUpdateRequest) (*profileResponse, error) {
@@ -311,7 +441,7 @@ func (h *profileHandler) putAvailability(ctx context.Context, input *availabilit
 			return nil, huma.Error400BadRequest("timezone is invalid")
 		}
 		slots[i].Timezone = tz
-	
+
 		key := fmt.Sprintf("%d|%s|%s|%s", slots[i].Weekday, start, end, tz)
 		if _, ok := seen[key]; ok {
 			return nil, huma.Error400BadRequest("availability slot is duplicate")
