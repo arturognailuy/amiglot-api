@@ -99,9 +99,15 @@ func TestGetProfile_NotFound(t *testing.T) {
 
 	h := &profileHandler{pool: pool}
 
-	_, err = h.getProfile(context.Background(), &profileGetRequest{UserID: userID})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "profile not found")
+	resp, err := h.getProfile(context.Background(), &profileGetRequest{UserID: userID})
+	require.NoError(t, err)
+	require.Equal(t, userID, resp.Body.User.ID)
+	require.Equal(t, "user4@example.com", resp.Body.User.Email)
+	require.Equal(t, "", resp.Body.Profile.Handle)
+	require.Equal(t, "America/Vancouver", resp.Body.Profile.Timezone)
+	require.False(t, resp.Body.Profile.Discoverable)
+	require.Len(t, resp.Body.Languages, 0)
+	require.Len(t, resp.Body.Availability, 0)
 }
 
 func TestProfileFlow_Success(t *testing.T) {
