@@ -140,17 +140,24 @@ func (h *profileHandler) getProfile(ctx context.Context, input *profileGetReques
 		return nil, huma.Error401Unauthorized("missing user id")
 	}
 
-	profile, err := h.loadProfile(ctx, userID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, huma.Error404NotFound("profile not found")
-		}
-		return nil, huma.Error500InternalServerError("failed to load profile")
-	}
-
 	user, err := h.loadUser(ctx, userID)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to load user")
+	}
+
+	profile, err := h.loadProfile(ctx, userID)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return nil, huma.Error500InternalServerError("failed to load profile")
+		}
+		profile = profilePayload{
+			Handle:       "",
+			BirthYear:    nil,
+			BirthMonth:   nil,
+			CountryCode:  nil,
+			Timezone:     "America/Vancouver",
+			Discoverable: false,
+		}
 	}
 
 	languages, err := h.loadLanguages(ctx, userID)
