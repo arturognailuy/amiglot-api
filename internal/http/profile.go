@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/gnailuy/amiglot-api/internal/i18n"
 	"context"
 	"errors"
 	"fmt"
@@ -132,26 +133,26 @@ func registerProfileRoutes(api huma.API, pool *pgxpool.Pool) {
 
 func (h *profileHandler) getProfile(ctx context.Context, input *profileGetRequest) (*profileResponse, error) {
 	if h.pool == nil {
-		return nil, huma.Error503ServiceUnavailable("database unavailable")
+		return nil, huma.Error503ServiceUnavailable(i18n.T(ctx, "errors.database_unavailable"))
 	}
 
 	userID := strings.TrimSpace(input.UserID)
 	if userID == "" || userID == "undefined" || userID == "null" {
-		return nil, huma.Error401Unauthorized("missing user id")
+		return nil, huma.Error401Unauthorized(i18n.T(ctx, "errors.missing_user_id"))
 	}
 
 	user, err := h.loadUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, huma.Error401Unauthorized("invalid user id")
+			return nil, huma.Error401Unauthorized(i18n.T(ctx, "errors.invalid_user_id"))
 		}
-		return nil, huma.Error500InternalServerError("failed to load user")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_load_user"))
 	}
 
 	profile, err := h.loadProfile(ctx, userID)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
-			return nil, huma.Error500InternalServerError("failed to load profile")
+			return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_load_profile"))
 		}
 		profile = profilePayload{
 			Handle:       "",
@@ -165,12 +166,12 @@ func (h *profileHandler) getProfile(ctx context.Context, input *profileGetReques
 
 	languages, err := h.loadLanguages(ctx, userID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to load languages")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_load_languages"))
 	}
 
 	availability, err := h.loadAvailability(ctx, userID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to load availability")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_load_availability"))
 	}
 
 	return &profileResponse{
@@ -190,24 +191,24 @@ func (h *profileHandler) getProfile(ctx context.Context, input *profileGetReques
 
 func (h *profileHandler) checkHandleAvailability(ctx context.Context, input *handleCheckRequest) (*handleCheckResponse, error) {
 	if h.pool == nil {
-		return nil, huma.Error503ServiceUnavailable("database unavailable")
+		return nil, huma.Error503ServiceUnavailable(i18n.T(ctx, "errors.database_unavailable"))
 	}
 
 	userID := strings.TrimSpace(input.UserID)
 	if userID == "" || userID == "undefined" || userID == "null" {
-		return nil, huma.Error401Unauthorized("missing user id")
+		return nil, huma.Error401Unauthorized(i18n.T(ctx, "errors.missing_user_id"))
 	}
 
 	handle := strings.TrimSpace(input.Handle)
 	if handle == "" {
-		return nil, huma.Error400BadRequest("handle is required")
+		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.handle_required"))
 	}
 	handle = strings.TrimPrefix(handle, "@")
 	if len(handle) < handleMinLength || len(handle) > handleMaxLength {
-		return nil, huma.Error400BadRequest("handle must be 3-20 characters")
+		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.handle_length"))
 	}
 	if !handlePattern.MatchString(handle) {
-		return nil, huma.Error400BadRequest("handle must be alphanumeric")
+		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.handle_alphanumeric"))
 	}
 
 	handleNorm := strings.ToLower(handle)
@@ -218,7 +219,7 @@ func (h *profileHandler) checkHandleAvailability(ctx context.Context, input *han
 		if errors.Is(err, pgx.ErrNoRows) {
 			available = true
 		} else {
-			return nil, huma.Error500InternalServerError("failed to check handle")
+			return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_check_handle"))
 		}
 	} else {
 		available = existingUserID == userID
@@ -233,44 +234,44 @@ func (h *profileHandler) checkHandleAvailability(ctx context.Context, input *han
 
 func (h *profileHandler) putProfile(ctx context.Context, input *profileUpdateRequest) (*profileResponse, error) {
 	if h.pool == nil {
-		return nil, huma.Error503ServiceUnavailable("database unavailable")
+		return nil, huma.Error503ServiceUnavailable(i18n.T(ctx, "errors.database_unavailable"))
 	}
 
 	userID := strings.TrimSpace(input.UserID)
 	if userID == "" || userID == "undefined" || userID == "null" {
-		return nil, huma.Error401Unauthorized("missing user id")
+		return nil, huma.Error401Unauthorized(i18n.T(ctx, "errors.missing_user_id"))
 	}
 
 	handle := strings.TrimSpace(input.Body.Handle)
 	if handle == "" {
-		return nil, huma.Error400BadRequest("handle is required")
+		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.handle_required"))
 	}
 	handle = strings.TrimPrefix(handle, "@")
 	if len(handle) < handleMinLength || len(handle) > handleMaxLength {
-		return nil, huma.Error400BadRequest("handle must be 3-20 characters")
+		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.handle_length"))
 	}
 	if !handlePattern.MatchString(handle) {
-		return nil, huma.Error400BadRequest("handle must be alphanumeric")
+		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.handle_alphanumeric"))
 	}
 	handle = strings.ToLower(handle)
 
 	timezone := strings.TrimSpace(input.Body.Timezone)
 	if timezone == "" {
-		return nil, huma.Error400BadRequest("timezone is required")
+		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.timezone_required"))
 	}
 	if _, err := time.LoadLocation(timezone); err != nil {
-		return nil, huma.Error400BadRequest("timezone is invalid")
+		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.timezone_invalid"))
 	}
 
 	currentYear := time.Now().UTC().Year()
 	if input.Body.BirthYear != nil {
 		if *input.Body.BirthYear < birthYearMin || *input.Body.BirthYear > currentYear {
-			return nil, huma.Error400BadRequest("birth_year must be between 1900 and current year")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.birth_year_range"))
 		}
 	}
 	if input.Body.BirthMonth != nil {
 		if *input.Body.BirthMonth < 1 || *input.Body.BirthMonth > 12 {
-			return nil, huma.Error400BadRequest("birth_month must be between 1 and 12")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.birth_month_range"))
 		}
 	}
 
@@ -279,7 +280,7 @@ func (h *profileHandler) putProfile(ctx context.Context, input *profileUpdateReq
 		trimmed := strings.ToUpper(strings.TrimSpace(*input.Body.CountryCode))
 		if trimmed != "" {
 			if !countryCodePattern.MatchString(trimmed) {
-				return nil, huma.Error400BadRequest("country_code must be ISO-3166 alpha-2")
+				return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.country_code_invalid"))
 			}
 			countryCode = &trimmed
 		}
@@ -301,13 +302,13 @@ func (h *profileHandler) putProfile(ctx context.Context, input *profileUpdateReq
 	`, userID, handle, handleNorm, input.Body.BirthYear, input.Body.BirthMonth, countryCode, timezone)
 	if err != nil {
 		if isUniqueViolation(err) {
-			return nil, huma.Error409Conflict("handle is already taken")
+			return nil, huma.Error409Conflict(i18n.T(ctx, "errors.handle_taken"))
 		}
-		return nil, huma.Error500InternalServerError("failed to save profile")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_save_profile"))
 	}
 
 	if err := h.recalcDiscoverable(ctx, userID); err != nil {
-		return nil, huma.Error500InternalServerError("failed to update discoverable status")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_update_discoverable"))
 	}
 
 	return h.getProfile(ctx, &profileGetRequest{UserID: userID})
@@ -315,17 +316,17 @@ func (h *profileHandler) putProfile(ctx context.Context, input *profileUpdateReq
 
 func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRequest) (*languagesPutResponse, error) {
 	if h.pool == nil {
-		return nil, huma.Error503ServiceUnavailable("database unavailable")
+		return nil, huma.Error503ServiceUnavailable(i18n.T(ctx, "errors.database_unavailable"))
 	}
 
 	userID := strings.TrimSpace(input.UserID)
 	if userID == "" || userID == "undefined" || userID == "null" {
-		return nil, huma.Error401Unauthorized("missing user id")
+		return nil, huma.Error401Unauthorized(i18n.T(ctx, "errors.missing_user_id"))
 	}
 
 	languages := input.Body.Languages
 	if len(languages) == 0 {
-		return nil, huma.Error400BadRequest("languages are required")
+		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.languages_required"))
 	}
 
 	seen := make(map[string]struct{})
@@ -333,25 +334,25 @@ func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRe
 	for _, lang := range languages {
 		code := strings.ToLower(strings.TrimSpace(lang.LanguageCode))
 		if code == "" {
-			return nil, huma.Error400BadRequest("language_code is required")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.language_code_required"))
 		}
 		if !languageCodePattern.MatchString(code) {
-			return nil, huma.Error400BadRequest("language_code must be ISO-639 (2-3 letters)")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.language_code_invalid"))
 		}
 		if lang.Level < 0 || lang.Level > 5 {
-			return nil, huma.Error400BadRequest("level must be between 0 and 5")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.level_range"))
 		}
 		if lang.IsNative && lang.IsTarget {
-			return nil, huma.Error400BadRequest("language cannot be both native and target")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.language_conflict"))
 		}
 		if lang.IsNative != (lang.Level == 5) {
-			return nil, huma.Error400BadRequest("native level must be level 5")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.native_level"))
 		}
 		if lang.IsTarget && lang.Level == 5 {
-			return nil, huma.Error400BadRequest("native language cannot be target")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.native_target"))
 		}
 		if _, ok := seen[code]; ok {
-			return nil, huma.Error400BadRequest("duplicate language_code")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.language_duplicate"))
 		}
 		seen[code] = struct{}{}
 		if lang.IsNative {
@@ -359,19 +360,19 @@ func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRe
 		}
 	}
 	if nativeCount == 0 {
-		return nil, huma.Error400BadRequest("at least one native language is required")
+		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.native_required"))
 	}
 
 	tx, err := h.pool.Begin(ctx)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to start transaction")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_start_tx"))
 	}
 	defer func() {
 		_ = tx.Rollback(ctx)
 	}()
 
 	if _, err := tx.Exec(ctx, `DELETE FROM user_languages WHERE user_id = $1`, userID); err != nil {
-		return nil, huma.Error500InternalServerError("failed to clear languages")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_clear_languages"))
 	}
 
 	for _, lang := range languages {
@@ -380,16 +381,16 @@ func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRe
 			VALUES ($1, $2, $3, $4, $5, $6)
 		`, userID, strings.ToLower(strings.TrimSpace(lang.LanguageCode)), lang.Level, lang.IsNative, lang.IsTarget, lang.Description)
 		if err != nil {
-			return nil, huma.Error500InternalServerError("failed to save languages")
+			return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_save_languages"))
 		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return nil, huma.Error500InternalServerError("failed to save languages")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_save_languages"))
 	}
 
 	if err := h.recalcDiscoverable(ctx, userID); err != nil {
-		return nil, huma.Error500InternalServerError("failed to update discoverable status")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_update_discoverable"))
 	}
 
 	return &languagesPutResponse{
@@ -401,46 +402,46 @@ func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRe
 
 func (h *profileHandler) putAvailability(ctx context.Context, input *availabilityPutRequest) (*availabilityPutResponse, error) {
 	if h.pool == nil {
-		return nil, huma.Error503ServiceUnavailable("database unavailable")
+		return nil, huma.Error503ServiceUnavailable(i18n.T(ctx, "errors.database_unavailable"))
 	}
 
 	userID := strings.TrimSpace(input.UserID)
 	if userID == "" || userID == "undefined" || userID == "null" {
-		return nil, huma.Error401Unauthorized("missing user id")
+		return nil, huma.Error401Unauthorized(i18n.T(ctx, "errors.missing_user_id"))
 	}
 
 	profile, err := h.loadProfile(ctx, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, huma.Error400BadRequest("profile is required before availability")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.profile_required"))
 		}
-		return nil, huma.Error500InternalServerError("failed to load profile")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_load_profile"))
 	}
 
 	slots := input.Body.Availability
 	if len(slots) > 14 {
-		return nil, huma.Error400BadRequest("availability is limited to 14 slots")
+		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.availability_limit"))
 	}
 	seen := make(map[string]struct{})
 	for i := range slots {
 		if slots[i].Weekday < 0 || slots[i].Weekday > 6 {
-			return nil, huma.Error400BadRequest("weekday must be between 0 and 6")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.weekday_range"))
 		}
 		start := strings.TrimSpace(slots[i].StartLocalTime)
 		end := strings.TrimSpace(slots[i].EndLocalTime)
 		if start == "" || end == "" {
-			return nil, huma.Error400BadRequest("start_local_time and end_local_time are required")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.availability_time_required"))
 		}
 		startTime, err := time.Parse("15:04", start)
 		if err != nil {
-			return nil, huma.Error400BadRequest("start_local_time must be HH:MM")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.start_time_format"))
 		}
 		endTime, err := time.Parse("15:04", end)
 		if err != nil {
-			return nil, huma.Error400BadRequest("end_local_time must be HH:MM")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.end_time_format"))
 		}
 		if !startTime.Before(endTime) {
-			return nil, huma.Error400BadRequest("start_local_time must be before end_local_time")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.start_time_order"))
 		}
 
 		tz := strings.TrimSpace(slots[i].Timezone)
@@ -448,27 +449,27 @@ func (h *profileHandler) putAvailability(ctx context.Context, input *availabilit
 			tz = profile.Timezone
 		}
 		if _, err := time.LoadLocation(tz); err != nil {
-			return nil, huma.Error400BadRequest("timezone is invalid")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.timezone_invalid"))
 		}
 		slots[i].Timezone = tz
 
 		key := fmt.Sprintf("%d|%s|%s|%s", slots[i].Weekday, start, end, tz)
 		if _, ok := seen[key]; ok {
-			return nil, huma.Error400BadRequest("availability slot is duplicate")
+			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.availability_duplicate"))
 		}
 		seen[key] = struct{}{}
 	}
 
 	tx, err := h.pool.Begin(ctx)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to start transaction")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_start_tx"))
 	}
 	defer func() {
 		_ = tx.Rollback(ctx)
 	}()
 
 	if _, err := tx.Exec(ctx, `DELETE FROM availability_slots WHERE user_id = $1`, userID); err != nil {
-		return nil, huma.Error500InternalServerError("failed to clear availability")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_clear_availability"))
 	}
 
 	for _, slot := range slots {
@@ -477,12 +478,12 @@ func (h *profileHandler) putAvailability(ctx context.Context, input *availabilit
 			VALUES ($1, $2, $3::time, $4::time, $5)
 		`, userID, slot.Weekday, slot.StartLocalTime, slot.EndLocalTime, slot.Timezone)
 		if err != nil {
-			return nil, huma.Error500InternalServerError("failed to save availability")
+			return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_save_availability"))
 		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return nil, huma.Error500InternalServerError("failed to save availability")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_save_availability"))
 	}
 
 	return &availabilityPutResponse{

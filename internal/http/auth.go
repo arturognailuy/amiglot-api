@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/gnailuy/amiglot-api/internal/config"
+	"github.com/gnailuy/amiglot-api/internal/i18n"
 )
 
 type authHandler struct {
@@ -45,22 +46,22 @@ type magicLinkResponse struct {
 
 func (h *authHandler) requestMagicLink(ctx context.Context, input *magicLinkRequest) (*magicLinkResponse, error) {
 	if h.pool == nil {
-		return nil, huma.Error503ServiceUnavailable("database unavailable")
+		return nil, huma.Error503ServiceUnavailable(i18n.T(ctx, "errors.database_unavailable"))
 	}
 
 	email := strings.TrimSpace(strings.ToLower(input.Body.Email))
 	if email == "" {
-		return nil, huma.Error400BadRequest("email is required")
+		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.email_required"))
 	}
 
 	userID, err := h.ensureUser(ctx, email)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to load user")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_load_user"))
 	}
 
 	token, tokenHash, err := generateToken()
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to generate token")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_generate_token"))
 	}
 
 	expiresAt := time.Now().Add(h.cfg.MagicLinkTTL)
@@ -70,7 +71,7 @@ func (h *authHandler) requestMagicLink(ctx context.Context, input *magicLinkRequ
 		tokenHash,
 		expiresAt,
 	); err != nil {
-		return nil, huma.Error500InternalServerError("failed to store token")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_store_token"))
 	}
 
 	var devLoginURL *string
@@ -106,19 +107,19 @@ type verifyResponse struct {
 
 func (h *authHandler) verifyMagicLink(ctx context.Context, input *verifyRequest) (*verifyResponse, error) {
 	if h.pool == nil {
-		return nil, huma.Error503ServiceUnavailable("database unavailable")
+		return nil, huma.Error503ServiceUnavailable(i18n.T(ctx, "errors.database_unavailable"))
 	}
 
 	token := strings.TrimSpace(input.Body.Token)
 	if token == "" {
-		return nil, huma.Error400BadRequest("token is required")
+		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.token_required"))
 	}
 
 	tokenHash := sha256.Sum256([]byte(token))
 
 	tx, err := h.pool.Begin(ctx)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to start transaction")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_start_tx"))
 	}
 	defer func() {
 		_ = tx.Rollback(ctx)
@@ -134,31 +135,31 @@ func (h *authHandler) verifyMagicLink(ctx context.Context, input *verifyRequest)
 	)
 	if err := row.Scan(&tokenID, &userID); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, huma.Error401Unauthorized("invalid or expired token")
+			return nil, huma.Error401Unauthorized(i18n.T(ctx, "errors.token_invalid"))
 		}
-		return nil, huma.Error500InternalServerError("failed to load token")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_load_token"))
 	}
 
 	if _, err := tx.Exec(ctx, `UPDATE magic_link_tokens SET consumed_at = now() WHERE id = $1`, tokenID); err != nil {
-		return nil, huma.Error500InternalServerError("failed to consume token")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_consume_token"))
 	}
 
 	if _, err := tx.Exec(ctx, `UPDATE users SET last_login_at = now() WHERE id = $1`, userID); err != nil {
-		return nil, huma.Error500InternalServerError("failed to update login time")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_update_login"))
 	}
 
 	var email string
 	if err := tx.QueryRow(ctx, `SELECT email FROM users WHERE id = $1`, userID).Scan(&email); err != nil {
-		return nil, huma.Error500InternalServerError("failed to load user")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_load_user"))
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return nil, huma.Error500InternalServerError("failed to commit token")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_commit_token"))
 	}
 
 	accessToken, _, err := generateToken()
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to generate access token")
+		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_generate_access_token"))
 	}
 
 	resp := &verifyResponse{}

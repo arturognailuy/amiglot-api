@@ -10,6 +10,7 @@ import (
 
 	"github.com/gnailuy/amiglot-api/internal/buildinfo"
 	"github.com/gnailuy/amiglot-api/internal/config"
+	"github.com/gnailuy/amiglot-api/internal/i18n"
 )
 
 // Router builds the HTTP routes.
@@ -17,6 +18,12 @@ func Router(cfg config.Config, pool *pgxpool.Pool) http.Handler {
 	root := http.NewServeMux()
 	apiMux := http.NewServeMux()
 	api := humago.New(apiMux, huma.DefaultConfig("Amiglot API", "1.0.0"))
+
+	api.UseMiddleware(func(ctx huma.Context, next func(huma.Context)) {
+		locale := i18n.LocaleFromHeader(ctx.Header("Accept-Language"))
+		ctx = huma.WithContext(ctx, i18n.ContextWithLocale(ctx.Context(), locale))
+		next(ctx)
+	})
 
 	huma.Get(api, "/healthz", func(ctx context.Context, input *struct{}) (*struct {
 		Body struct {
