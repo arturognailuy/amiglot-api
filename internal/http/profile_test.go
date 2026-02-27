@@ -152,7 +152,7 @@ func TestProfileFlow_Success(t *testing.T) {
 	require.Equal(t, userID, resp.Body.User.ID)
 	require.Equal(t, "user5@example.com", resp.Body.User.Email)
 	require.Equal(t, "arturo", resp.Body.Profile.Handle)
-	require.Equal(t, "", resp.Body.Profile.Timezone)
+	require.Equal(t, "America/Vancouver", resp.Body.Profile.Timezone)
 	require.True(t, resp.Body.Profile.Discoverable)
 	require.Len(t, resp.Body.Languages, 1)
 	require.Len(t, resp.Body.Availability, 1)
