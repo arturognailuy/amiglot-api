@@ -158,7 +158,7 @@ func (h *profileHandler) getProfile(ctx context.Context, input *profileGetReques
 			BirthYear:    nil,
 			BirthMonth:   nil,
 			CountryCode:  nil,
-			Timezone:     "America/Vancouver",
+			Timezone:     "",
 			Discoverable: false,
 		}
 	}

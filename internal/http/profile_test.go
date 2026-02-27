@@ -104,7 +104,7 @@ func TestGetProfile_NotFound(t *testing.T) {
 	require.Equal(t, userID, resp.Body.User.ID)
 	require.Equal(t, "user4@example.com", resp.Body.User.Email)
 	require.Equal(t, "", resp.Body.Profile.Handle)
-	require.Equal(t, "America/Vancouver", resp.Body.Profile.Timezone)
+	require.Equal(t, "", resp.Body.Profile.Timezone)
 	require.False(t, resp.Body.Profile.Discoverable)
 	require.Len(t, resp.Body.Languages, 0)
 	require.Len(t, resp.Body.Availability, 0)
