@@ -14,7 +14,10 @@ type localeKey struct{}
 var supportedTags = []language.Tag{
 	language.English,
 	language.SimplifiedChinese,
+	language.TraditionalChinese,
+	language.MustParse("pt"),
 	language.MustParse("pt-BR"),
+	language.MustParse("pt-PT"),
 }
 
 var matcher = language.NewMatcher(supportedTags)
@@ -50,10 +53,7 @@ func normalizeTag(tag language.Tag) string {
 		return "zh"
 	}
 	if base.String() == "pt" {
-		region, _ := tag.Region()
-		if region.String() == "BR" {
-			return "pt-BR"
-		}
+		return "pt-BR"
 	}
 	if base.String() == "en" {
 		return "en"

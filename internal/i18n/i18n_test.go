@@ -13,9 +13,13 @@ func TestLocaleFromHeader(t *testing.T) {
 	}{
 		{"empty", "", DefaultLocale},
 		{"english", "en-GB", "en"},
+		{"english_us", "en-US", "en"},
 		{"portuguese", "pt-BR", "pt-BR"},
 		{"portuguese_underscore", "pt_BR", "pt-BR"},
+		{"portuguese_pt", "pt-PT", "pt-BR"},
+		{"portuguese_plain", "pt", "pt-BR"},
 		{"chinese", "zh-CN", "zh"},
+		{"chinese_hant", "zh-Hant", "zh"},
 		{"fallback", "fr-FR", DefaultLocale},
 		{"invalid", "???", DefaultLocale},
 	}
