@@ -12,9 +12,18 @@ const DefaultLocale = "en"
 type localeKey struct{}
 
 var supportedTags = []language.Tag{
-	language.English,
+	language.MustParse("en"),
+	language.MustParse("en-AU"),
+	language.MustParse("en-CA"),
+	language.MustParse("en-GB"),
+	language.MustParse("en-US"),
 	language.SimplifiedChinese,
 	language.TraditionalChinese,
+	language.MustParse("zh-CN"),
+	language.MustParse("zh-SG"),
+	language.MustParse("zh-TW"),
+	language.MustParse("zh-HK"),
+	language.MustParse("zh-MO"),
 	language.MustParse("pt"),
 	language.MustParse("pt-BR"),
 	language.MustParse("pt-PT"),
@@ -48,14 +57,27 @@ func LocaleFromHeader(header string) string {
 }
 
 func normalizeTag(tag language.Tag) string {
-	base, _ := tag.Base()
-	if base.String() == "zh" {
+	tagStr := tag.String()
+	switch tagStr {
+	case "zh-Hans", "zh-CN", "zh-SG":
+		return "zh-Hans"
+	case "zh-Hant", "zh-HK", "zh-TW", "zh-MO":
+		return "zh-Hant"
+	case "zh":
 		return "zh"
-	}
-	if base.String() == "pt" {
+	case "pt-PT":
+		return "pt-PT"
+	case "pt-BR", "pt":
 		return "pt-BR"
-	}
-	if base.String() == "en" {
+	case "en-AU":
+		return "en-AU"
+	case "en-CA":
+		return "en-CA"
+	case "en-GB":
+		return "en-GB"
+	case "en-US":
+		return "en-US"
+	case "en":
 		return "en"
 	}
 	return DefaultLocale
