@@ -1,25 +1,12 @@
 # Amiglot API — Technical Specification (Backend)
 
-## 1. Technical Constraints
-- Go 1.24
-- Huma (HTTP framework)
-- PostgreSQL with pgx + sqlc, migrations via goose
-- API port: 6176
-- Base URL path prefix: `/api/v1` (dev via Caddy: `https://test.gnailuy.com/api/v1`)
-
+> Backend technical constraints and coding standards live in `designs/000-architecture-guidelines.md`.
 > Shared UI ↔ API contract lives in `amiglot-ui/designs/003-technical-specification.md`.
 
-## 2. Database Schema (V1)
+## 1. Database Schema (V1)
 This section defines the **database schema** for V1.
 
-### 2.1 Conventions
-- **Primary keys:** UUID (`gen_random_uuid()`)
-- **Timestamps:** `timestamptz` in UTC
-- **Handles:** stored **without** `@`, UI displays with `@` (letters/numbers/underscore; API accepts an optional leading `@` and normalizes it away)
-- **Timezone:** IANA name (e.g., `America/Vancouver`)
-- **Languages:** BCP-47 language code (e.g., `en`, `es-ES`)
-
-### 2.2 Core Tables
+### 1.1 Core Tables
 
 **users**
 Auth + identity (email only in V1).
@@ -107,7 +94,7 @@ CREATE INDEX availability_local_idx ON availability_slots(weekday, start_local_t
 > - `timezone` defaults to the profile timezone but can be overridden per slot.
 > - Matching converts `(date + weekday + start/end_local_time AT TIME ZONE timezone)` into UTC during search.
 
-### 2.3 Matching & Messaging
+### 1.2 Matching & Messaging
 
 **match_requests**
 
@@ -164,7 +151,7 @@ CREATE INDEX messages_match_request_idx ON messages(match_request_id, created_at
 
 > Application ensures `sender_id` belongs to the match (or the match request for pre‑accept messages).
 
-### 2.4 Safety & Admin (Minimal V1)
+### 1.3 Safety & Admin (Minimal V1)
 
 **user_blocks**
 
@@ -191,7 +178,7 @@ CREATE TABLE user_reports (
 );
 ```
 
-### 2.5 Query Examples (Use Cases)
+### 1.4 Query Examples (Use Cases)
 Pseudo-SQL showing the logic; actual implementation can be optimized with CTEs and indexes.
 
 **Search candidates (filters + mutual match rules)**
@@ -287,32 +274,32 @@ INSERT INTO messages (match_id, sender_id, body)
 VALUES (:match_id, :sender_id, :body);
 ```
 
-### 2.6 Migration Notes
+### 1.5 Migration Notes
 - Existing `users` table already present in `amiglot-api` migrations; add new tables via sequential migrations.
 - When user changes handle, update `profiles.handle` and `profiles.handle_norm`.
 - Availability slots are stored in local time + timezone; matching converts to UTC at query time, so DST shifts are handled without rewriting rows.
 
-## 3. API Contract Implementation Notes
+## 2. API Contract Implementation Notes
 > Shared UI ↔ API contract lives in `amiglot-ui/designs/003-technical-specification.md`.
 
-### 3.1 Authentication & Authorization
+### 2.1 Authentication & Authorization
 - Magic link auth issues access tokens; all non-public endpoints require auth.
 - Authorization checks: resource ownership for profile/languages/availability; match membership for messaging.
 - Email is only returned via `/me` and never exposed elsewhere.
 
-### 3.2 Validation & Business Rules
+### 2.2 Validation & Business Rules
 - Handle uniqueness (case-insensitive); store normalized value in `profiles.handle_norm`.
 - Require at least one native language on profile creation.
 - Enforce `start_local_time < end_local_time` (wrap-around slots split into two rows).
 - `match_requests`: enforce one pending request between user pairs.
 
-### 3.3 Rate Limits & Abuse Controls (V1)
+### 2.3 Rate Limits & Abuse Controls (V1)
 - `/auth/magic-link`: per-IP + per-email
 - `/search`: per-user and per-IP
 - `/matches/{id}/messages`: per-user/day (per product spec)
 - Anti-spam: enforce pre-accept message limit + daily cap (configurable)
 
-### 3.4 Monitoring & Metrics
+### 2.4 Monitoring & Metrics
 - Health endpoints: `/healthz` (basic JSON + build metadata) + `/readyz` (db connectivity)
 - Metrics: Prometheus `/metrics` (req count, latency, errors, auth failures, rate-limit hits, DB latency, mail sends, message sends)
 - Structured logging: JSON with request_id, user_id (when available), route, status, latency
