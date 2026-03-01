@@ -2,39 +2,17 @@ package http
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"regexp"
-	"strings"
-	"time"
-
-	"github.com/gnailuy/amiglot-api/internal/i18n"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-)
 
-const (
-	handleMinLength = 3
-	handleMaxLength = 20
-	birthYearMin    = 1900
+	"github.com/gnailuy/amiglot-api/internal/model"
+	"github.com/gnailuy/amiglot-api/internal/repository"
+	"github.com/gnailuy/amiglot-api/internal/service"
 )
-
-var (
-	handlePattern       = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
-	languageCodePattern = regexp.MustCompile(`^[a-z]{2,3}([_-][a-z0-9]{2,8})*$`)
-	countryCodePattern  = regexp.MustCompile(`^[A-Z]{2}$`)
-)
-
-func normalizeLanguageCode(code string) string {
-	normalized := strings.ToLower(strings.TrimSpace(code))
-	return strings.ReplaceAll(normalized, "_", "-")
-}
 
 type profileHandler struct {
-	pool *pgxpool.Pool
+	svc *service.ProfileService
 }
 
 type profilePayload struct {
@@ -128,7 +106,9 @@ type handleCheckResponse struct {
 }
 
 func registerProfileRoutes(api huma.API, pool *pgxpool.Pool) {
-	h := &profileHandler{pool: pool}
+	repo := repository.NewProfileRepository(pool)
+	svc := service.NewProfileService(repo)
+	h := &profileHandler{svc: svc}
 
 	huma.Get(api, "/profile", h.getProfile)
 	huma.Get(api, "/profile/handle/check", h.checkHandleAvailability)
@@ -138,46 +118,9 @@ func registerProfileRoutes(api huma.API, pool *pgxpool.Pool) {
 }
 
 func (h *profileHandler) getProfile(ctx context.Context, input *profileGetRequest) (*profileResponse, error) {
-	if h.pool == nil {
-		return nil, huma.Error503ServiceUnavailable(i18n.T(ctx, "errors.database_unavailable"))
-	}
-
-	userID := strings.TrimSpace(input.UserID)
-	if userID == "" || userID == "undefined" || userID == "null" {
-		return nil, huma.Error401Unauthorized(i18n.T(ctx, "errors.missing_user_id"))
-	}
-
-	user, err := h.loadUser(ctx, userID)
+	user, profile, languages, availability, err := h.svc.GetProfile(ctx, input.UserID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, huma.Error401Unauthorized(i18n.T(ctx, "errors.invalid_user_id"))
-		}
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_load_user"))
-	}
-
-	profile, err := h.loadProfile(ctx, userID)
-	if err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
-			return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_load_profile"))
-		}
-		profile = profilePayload{
-			Handle:       "",
-			BirthYear:    nil,
-			BirthMonth:   nil,
-			CountryCode:  nil,
-			Timezone:     "",
-			Discoverable: false,
-		}
-	}
-
-	languages, err := h.loadLanguages(ctx, userID)
-	if err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_load_languages"))
-	}
-
-	availability, err := h.loadAvailability(ctx, userID)
-	if err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_load_availability"))
+		return nil, toHumaError(ctx, err)
 	}
 
 	return &profileResponse{
@@ -187,48 +130,18 @@ func (h *profileHandler) getProfile(ctx context.Context, input *profileGetReques
 			Languages    []languagePayload     `json:"languages"`
 			Availability []availabilityPayload `json:"availability"`
 		}{
-			User:         user,
-			Profile:      profile,
-			Languages:    languages,
-			Availability: availability,
+			User:         toUserPayload(user),
+			Profile:      toProfilePayload(profile),
+			Languages:    toLanguagePayloads(languages),
+			Availability: toAvailabilityPayloads(availability),
 		},
 	}, nil
 }
 
 func (h *profileHandler) checkHandleAvailability(ctx context.Context, input *handleCheckRequest) (*handleCheckResponse, error) {
-	if h.pool == nil {
-		return nil, huma.Error503ServiceUnavailable(i18n.T(ctx, "errors.database_unavailable"))
-	}
-
-	userID := strings.TrimSpace(input.UserID)
-	if userID == "" || userID == "undefined" || userID == "null" {
-		return nil, huma.Error401Unauthorized(i18n.T(ctx, "errors.missing_user_id"))
-	}
-
-	handle := strings.TrimSpace(input.Handle)
-	if handle == "" {
-		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.handle_required"))
-	}
-	handle = strings.TrimPrefix(handle, "@")
-	if len(handle) < handleMinLength || len(handle) > handleMaxLength {
-		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.handle_length"))
-	}
-	if !handlePattern.MatchString(handle) {
-		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.handle_alphanumeric"))
-	}
-
-	handleNorm := strings.ToLower(handle)
-	var existingUserID string
-	err := h.pool.QueryRow(ctx, `SELECT user_id FROM profiles WHERE handle_norm = $1`, handleNorm).Scan(&existingUserID)
-	available := false
+	available, err := h.svc.CheckHandleAvailability(ctx, input.UserID, input.Handle)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			available = true
-		} else {
-			return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_check_handle"))
-		}
-	} else {
-		available = existingUserID == userID
+		return nil, toHumaError(ctx, err)
 	}
 
 	return &handleCheckResponse{
@@ -239,368 +152,141 @@ func (h *profileHandler) checkHandleAvailability(ctx context.Context, input *han
 }
 
 func (h *profileHandler) putProfile(ctx context.Context, input *profileUpdateRequest) (*profileResponse, error) {
-	if h.pool == nil {
-		return nil, huma.Error503ServiceUnavailable(i18n.T(ctx, "errors.database_unavailable"))
+	profile := model.Profile{
+		Handle:      input.Body.Handle,
+		BirthYear:   input.Body.BirthYear,
+		BirthMonth:  input.Body.BirthMonth,
+		CountryCode: input.Body.CountryCode,
+		Timezone:    input.Body.Timezone,
 	}
 
-	userID := strings.TrimSpace(input.UserID)
-	if userID == "" || userID == "undefined" || userID == "null" {
-		return nil, huma.Error401Unauthorized(i18n.T(ctx, "errors.missing_user_id"))
-	}
-
-	handle := strings.TrimSpace(input.Body.Handle)
-	if handle == "" {
-		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.handle_required"))
-	}
-	handle = strings.TrimPrefix(handle, "@")
-	if len(handle) < handleMinLength || len(handle) > handleMaxLength {
-		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.handle_length"))
-	}
-	if !handlePattern.MatchString(handle) {
-		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.handle_alphanumeric"))
-	}
-	handle = strings.ToLower(handle)
-
-	timezone := strings.TrimSpace(input.Body.Timezone)
-	if timezone == "" {
-		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.timezone_required"))
-	}
-	if _, err := time.LoadLocation(timezone); err != nil {
-		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.timezone_invalid"))
-	}
-
-	currentYear := time.Now().UTC().Year()
-	if input.Body.BirthYear != nil {
-		if *input.Body.BirthYear < birthYearMin || *input.Body.BirthYear > currentYear {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.birth_year_range"))
-		}
-	}
-	if input.Body.BirthMonth != nil {
-		if *input.Body.BirthMonth < 1 || *input.Body.BirthMonth > 12 {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.birth_month_range"))
-		}
-	}
-
-	var countryCode *string
-	if input.Body.CountryCode != nil {
-		trimmed := strings.ToUpper(strings.TrimSpace(*input.Body.CountryCode))
-		if trimmed != "" {
-			if !countryCodePattern.MatchString(trimmed) {
-				return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.country_code_invalid"))
-			}
-			countryCode = &trimmed
-		}
-	}
-
-	handleNorm := handle
-
-	_, err := h.pool.Exec(ctx, `
-		INSERT INTO profiles (user_id, handle, handle_norm, birth_year, birth_month, country_code, timezone)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		ON CONFLICT (user_id) DO UPDATE SET
-		  handle = EXCLUDED.handle,
-		  handle_norm = EXCLUDED.handle_norm,
-		  birth_year = EXCLUDED.birth_year,
-		  birth_month = EXCLUDED.birth_month,
-		  country_code = EXCLUDED.country_code,
-		  timezone = EXCLUDED.timezone,
-		  updated_at = now()
-	`, userID, handle, handleNorm, input.Body.BirthYear, input.Body.BirthMonth, countryCode, timezone)
+	user, updatedProfile, languages, availability, err := h.svc.UpdateProfile(ctx, input.UserID, profile)
 	if err != nil {
-		if isUniqueViolation(err) {
-			return nil, huma.Error409Conflict(i18n.T(ctx, "errors.handle_taken"))
-		}
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_save_profile"))
+		return nil, toHumaError(ctx, err)
 	}
 
-	if err := h.recalcDiscoverable(ctx, userID); err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_update_discoverable"))
-	}
-
-	return h.getProfile(ctx, &profileGetRequest{UserID: userID})
+	return &profileResponse{
+		Body: struct {
+			User         userPayload           `json:"user"`
+			Profile      profilePayload        `json:"profile"`
+			Languages    []languagePayload     `json:"languages"`
+			Availability []availabilityPayload `json:"availability"`
+		}{
+			User:         toUserPayload(user),
+			Profile:      toProfilePayload(updatedProfile),
+			Languages:    toLanguagePayloads(languages),
+			Availability: toAvailabilityPayloads(availability),
+		},
+	}, nil
 }
 
 func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRequest) (*languagesPutResponse, error) {
-	if h.pool == nil {
-		return nil, huma.Error503ServiceUnavailable(i18n.T(ctx, "errors.database_unavailable"))
-	}
+	languages := toModelLanguages(input.Body.Languages)
 
-	userID := strings.TrimSpace(input.UserID)
-	if userID == "" || userID == "undefined" || userID == "null" {
-		return nil, huma.Error401Unauthorized(i18n.T(ctx, "errors.missing_user_id"))
-	}
-
-	languages := input.Body.Languages
-	if len(languages) == 0 {
-		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.languages_required"))
-	}
-
-	normalizedLanguages := make([]languagePayload, 0, len(languages))
-	seen := make(map[string]struct{})
-	nativeCount := 0
-	for _, lang := range languages {
-		code := normalizeLanguageCode(lang.LanguageCode)
-		if code == "" {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.language_code_required"))
-		}
-		if !languageCodePattern.MatchString(code) {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.language_code_invalid"))
-		}
-		if lang.Level < 0 || lang.Level > 5 {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.level_range"))
-		}
-		if lang.IsNative && lang.IsTarget {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.language_conflict"))
-		}
-		if lang.IsNative != (lang.Level == 5) {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.native_level"))
-		}
-		if lang.IsTarget && lang.Level == 5 {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.native_target"))
-		}
-		if _, ok := seen[code]; ok {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.language_duplicate"))
-		}
-		seen[code] = struct{}{}
-		if lang.IsNative {
-			nativeCount++
-		}
-		normalizedLang := lang
-		normalizedLang.LanguageCode = code
-		normalizedLanguages = append(normalizedLanguages, normalizedLang)
-	}
-	if nativeCount == 0 {
-		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.native_required"))
-	}
-
-	tx, err := h.pool.Begin(ctx)
+	updated, err := h.svc.UpdateLanguages(ctx, input.UserID, languages)
 	if err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_start_tx"))
-	}
-	defer func() {
-		_ = tx.Rollback(ctx)
-	}()
-
-	if _, err := tx.Exec(ctx, `DELETE FROM user_languages WHERE user_id = $1`, userID); err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_clear_languages"))
-	}
-
-	for _, lang := range normalizedLanguages {
-		_, err := tx.Exec(ctx, `
-			INSERT INTO user_languages (user_id, language_code, level, is_native, is_target, description)
-			VALUES ($1, $2, $3, $4, $5, $6)
-		`, userID, lang.LanguageCode, lang.Level, lang.IsNative, lang.IsTarget, lang.Description)
-		if err != nil {
-			return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_save_languages"))
-		}
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_save_languages"))
-	}
-
-	if err := h.recalcDiscoverable(ctx, userID); err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_update_discoverable"))
+		return nil, toHumaError(ctx, err)
 	}
 
 	return &languagesPutResponse{
 		Body: struct {
 			Languages []languagePayload `json:"languages"`
-		}{Languages: normalizedLanguages},
+		}{Languages: toLanguagePayloads(updated)},
 	}, nil
 }
 
 func (h *profileHandler) putAvailability(ctx context.Context, input *availabilityPutRequest) (*availabilityPutResponse, error) {
-	if h.pool == nil {
-		return nil, huma.Error503ServiceUnavailable(i18n.T(ctx, "errors.database_unavailable"))
-	}
+	slots := toModelAvailability(input.Body.Availability)
 
-	userID := strings.TrimSpace(input.UserID)
-	if userID == "" || userID == "undefined" || userID == "null" {
-		return nil, huma.Error401Unauthorized(i18n.T(ctx, "errors.missing_user_id"))
-	}
-
-	profile, err := h.loadProfile(ctx, userID)
+	updated, err := h.svc.UpdateAvailability(ctx, input.UserID, slots)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.profile_required"))
-		}
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_load_profile"))
-	}
-
-	slots := input.Body.Availability
-	if len(slots) > 14 {
-		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.availability_limit"))
-	}
-	seen := make(map[string]struct{})
-	for i := range slots {
-		if slots[i].Weekday < 0 || slots[i].Weekday > 6 {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.weekday_range"))
-		}
-		start := strings.TrimSpace(slots[i].StartLocalTime)
-		end := strings.TrimSpace(slots[i].EndLocalTime)
-		if start == "" || end == "" {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.availability_time_required"))
-		}
-		startTime, err := time.Parse("15:04", start)
-		if err != nil {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.start_time_format"))
-		}
-		endTime, err := time.Parse("15:04", end)
-		if err != nil {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.end_time_format"))
-		}
-		if !startTime.Before(endTime) {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.start_time_order"))
-		}
-
-		tz := strings.TrimSpace(slots[i].Timezone)
-		if tz == "" {
-			tz = profile.Timezone
-		}
-		if _, err := time.LoadLocation(tz); err != nil {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.timezone_invalid"))
-		}
-		slots[i].Timezone = tz
-
-		key := fmt.Sprintf("%d|%s|%s|%s", slots[i].Weekday, start, end, tz)
-		if _, ok := seen[key]; ok {
-			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.availability_duplicate"))
-		}
-		seen[key] = struct{}{}
-	}
-
-	tx, err := h.pool.Begin(ctx)
-	if err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_start_tx"))
-	}
-	defer func() {
-		_ = tx.Rollback(ctx)
-	}()
-
-	if _, err := tx.Exec(ctx, `DELETE FROM availability_slots WHERE user_id = $1`, userID); err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_clear_availability"))
-	}
-
-	for _, slot := range slots {
-		_, err := tx.Exec(ctx, `
-			INSERT INTO availability_slots (user_id, weekday, start_local_time, end_local_time, timezone)
-			VALUES ($1, $2, $3::time, $4::time, $5)
-		`, userID, slot.Weekday, slot.StartLocalTime, slot.EndLocalTime, slot.Timezone)
-		if err != nil {
-			return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_save_availability"))
-		}
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_save_availability"))
+		return nil, toHumaError(ctx, err)
 	}
 
 	return &availabilityPutResponse{
 		Body: struct {
 			Availability []availabilityPayload `json:"availability"`
-		}{Availability: slots},
+		}{Availability: toAvailabilityPayloads(updated)},
 	}, nil
 }
 
-func (h *profileHandler) loadUser(ctx context.Context, userID string) (userPayload, error) {
-	var user userPayload
-	row := h.pool.QueryRow(ctx, `SELECT id, email FROM users WHERE id = $1`, userID)
-	if err := row.Scan(&user.ID, &user.Email); err != nil {
-		return userPayload{}, err
-	}
-	return user, nil
+func toUserPayload(user model.User) userPayload {
+	return userPayload{ID: user.ID, Email: user.Email}
 }
 
-func (h *profileHandler) loadProfile(ctx context.Context, userID string) (profilePayload, error) {
-	var profile profilePayload
-	row := h.pool.QueryRow(ctx, `
-		SELECT handle, birth_year, birth_month, country_code, timezone, discoverable
-		FROM profiles
-		WHERE user_id = $1
-	`, userID)
-	if err := row.Scan(&profile.Handle, &profile.BirthYear, &profile.BirthMonth, &profile.CountryCode, &profile.Timezone, &profile.Discoverable); err != nil {
-		return profilePayload{}, err
+func toProfilePayload(profile model.Profile) profilePayload {
+	return profilePayload{
+		Handle:       profile.Handle,
+		BirthYear:    profile.BirthYear,
+		BirthMonth:   profile.BirthMonth,
+		CountryCode:  profile.CountryCode,
+		Timezone:     profile.Timezone,
+		Discoverable: profile.Discoverable,
 	}
-	return profile, nil
 }
 
-func (h *profileHandler) loadLanguages(ctx context.Context, userID string) ([]languagePayload, error) {
-	rows, err := h.pool.Query(ctx, `
-		SELECT language_code, level, is_native, is_target, description
-		FROM user_languages
-		WHERE user_id = $1
-		ORDER BY language_code
-	`, userID)
-	if err != nil {
-		return nil, err
+func toLanguagePayloads(languages []model.Language) []languagePayload {
+	if len(languages) == 0 {
+		return []languagePayload{}
 	}
-	defer rows.Close()
-
-	languages := []languagePayload{}
-	for rows.Next() {
-		var lang languagePayload
-		if err := rows.Scan(&lang.LanguageCode, &lang.Level, &lang.IsNative, &lang.IsTarget, &lang.Description); err != nil {
-			return nil, err
-		}
-		languages = append(languages, lang)
+	payloads := make([]languagePayload, 0, len(languages))
+	for _, lang := range languages {
+		payloads = append(payloads, languagePayload{
+			LanguageCode: lang.LanguageCode,
+			Level:        lang.Level,
+			IsNative:     lang.IsNative,
+			IsTarget:     lang.IsTarget,
+			Description:  lang.Description,
+		})
 	}
-	return languages, rows.Err()
+	return payloads
 }
 
-func (h *profileHandler) loadAvailability(ctx context.Context, userID string) ([]availabilityPayload, error) {
-	rows, err := h.pool.Query(ctx, `
-		SELECT weekday,
-		  to_char(start_local_time, 'HH24:MI') as start_local_time,
-		  to_char(end_local_time, 'HH24:MI') as end_local_time,
-		  timezone
-		FROM availability_slots
-		WHERE user_id = $1
-		ORDER BY weekday, start_local_time
-	`, userID)
-	if err != nil {
-		return nil, err
+func toAvailabilityPayloads(slots []model.AvailabilitySlot) []availabilityPayload {
+	if len(slots) == 0 {
+		return []availabilityPayload{}
 	}
-	defer rows.Close()
-
-	availability := []availabilityPayload{}
-	for rows.Next() {
-		var slot availabilityPayload
-		if err := rows.Scan(&slot.Weekday, &slot.StartLocalTime, &slot.EndLocalTime, &slot.Timezone); err != nil {
-			return nil, err
-		}
-		availability = append(availability, slot)
+	payloads := make([]availabilityPayload, 0, len(slots))
+	for _, slot := range slots {
+		payloads = append(payloads, availabilityPayload{
+			Weekday:        slot.Weekday,
+			StartLocalTime: slot.StartLocalTime,
+			EndLocalTime:   slot.EndLocalTime,
+			Timezone:       slot.Timezone,
+		})
 	}
-	return availability, rows.Err()
+	return payloads
 }
 
-func (h *profileHandler) recalcDiscoverable(ctx context.Context, userID string) error {
-	var hasNative bool
-	row := h.pool.QueryRow(ctx, `
-		SELECT EXISTS (
-		  SELECT 1 FROM user_languages WHERE user_id = $1 AND is_native = true
-		)
-	`, userID)
-	if err := row.Scan(&hasNative); err != nil {
-		return err
+func toModelLanguages(languages []languagePayload) []model.Language {
+	if len(languages) == 0 {
+		return []model.Language{}
 	}
-
-	var handle string
-	var timezone string
-	row = h.pool.QueryRow(ctx, `SELECT handle, timezone FROM profiles WHERE user_id = $1`, userID)
-	if err := row.Scan(&handle, &timezone); err != nil {
-		return err
+	models := make([]model.Language, 0, len(languages))
+	for _, lang := range languages {
+		models = append(models, model.Language{
+			LanguageCode: lang.LanguageCode,
+			Level:        lang.Level,
+			IsNative:     lang.IsNative,
+			IsTarget:     lang.IsTarget,
+			Description:  lang.Description,
+		})
 	}
-
-	discoverable := hasNative && strings.TrimSpace(handle) != "" && strings.TrimSpace(timezone) != ""
-	_, err := h.pool.Exec(ctx, `UPDATE profiles SET discoverable = $1, updated_at = now() WHERE user_id = $2`, discoverable, userID)
-	return err
+	return models
 }
 
-func isUniqueViolation(err error) bool {
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
-		return pgErr.Code == "23505"
+func toModelAvailability(slots []availabilityPayload) []model.AvailabilitySlot {
+	if len(slots) == 0 {
+		return []model.AvailabilitySlot{}
 	}
-	return false
+	models := make([]model.AvailabilitySlot, 0, len(slots))
+	for _, slot := range slots {
+		models = append(models, model.AvailabilitySlot{
+			Weekday:        slot.Weekday,
+			StartLocalTime: slot.StartLocalTime,
+			EndLocalTime:   slot.EndLocalTime,
+			Timezone:       slot.Timezone,
+		})
+	}
+	return models
 }

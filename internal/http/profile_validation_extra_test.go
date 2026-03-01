@@ -15,7 +15,7 @@ func TestProfileValidation_AdditionalErrors(t *testing.T) {
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ($1) RETURNING id`, "extra@example.com").Scan(&userID)
 	require.NoError(t, err)
 
-	h := &profileHandler{pool: pool}
+	h := newProfileHandler(pool)
 
 	_, err = h.putProfile(context.Background(), &profileUpdateRequest{UserID: userID, Body: struct {
 		Handle      string  `json:"handle"`
@@ -79,7 +79,7 @@ func TestLanguagesValidation_AdditionalErrors(t *testing.T) {
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ($1) RETURNING id`, "extra2@example.com").Scan(&userID)
 	require.NoError(t, err)
 
-	h := &profileHandler{pool: pool}
+	h := newProfileHandler(pool)
 
 	_, err = h.putProfile(context.Background(), &profileUpdateRequest{UserID: userID, Body: struct {
 		Handle      string  `json:"handle"`
@@ -134,7 +134,7 @@ func TestAvailabilityValidation_AdditionalErrors(t *testing.T) {
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ($1) RETURNING id`, "extra3@example.com").Scan(&userID)
 	require.NoError(t, err)
 
-	h := &profileHandler{pool: pool}
+	h := newProfileHandler(pool)
 
 	_, err = h.putProfile(context.Background(), &profileUpdateRequest{UserID: userID, Body: struct {
 		Handle      string  `json:"handle"`
@@ -165,7 +165,7 @@ func TestHandleAvailability_MissingUserID(t *testing.T) {
 	pool := openTestPool(t)
 	defer pool.Close()
 
-	h := &profileHandler{pool: pool}
+	h := newProfileHandler(pool)
 
 	_, err := h.checkHandleAvailability(context.Background(), &handleCheckRequest{UserID: "", Handle: "valid"})
 	require.Error(t, err)

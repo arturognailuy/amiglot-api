@@ -2,29 +2,24 @@ package http
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
-	"errors"
 	"log"
-	"strings"
-	"time"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/gnailuy/amiglot-api/internal/config"
-	"github.com/gnailuy/amiglot-api/internal/i18n"
+	"github.com/gnailuy/amiglot-api/internal/repository"
+	"github.com/gnailuy/amiglot-api/internal/service"
 )
 
 type authHandler struct {
-	cfg  config.Config
-	pool *pgxpool.Pool
+	svc *service.AuthService
 }
 
 func registerAuthRoutes(api huma.API, cfg config.Config, pool *pgxpool.Pool) {
-	h := &authHandler{cfg: cfg, pool: pool}
+	repo := repository.NewAuthRepository(pool)
+	svc := service.NewAuthService(cfg, repo)
+	h := &authHandler{svc: svc}
 
 	huma.Post(api, "/auth/magic-link", h.requestMagicLink)
 	huma.Post(api, "/auth/verify", h.verifyMagicLink)
@@ -45,42 +40,15 @@ type magicLinkResponse struct {
 }
 
 func (h *authHandler) requestMagicLink(ctx context.Context, input *magicLinkRequest) (*magicLinkResponse, error) {
-	if h.pool == nil {
-		return nil, huma.Error503ServiceUnavailable(i18n.T(ctx, "errors.database_unavailable"))
-	}
-
-	email := strings.TrimSpace(strings.ToLower(input.Body.Email))
-	if email == "" {
-		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.email_required"))
-	}
-
-	userID, err := h.ensureUser(ctx, email)
+	devLoginURL, err := h.svc.RequestMagicLink(ctx, input.Body.Email)
 	if err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_load_user"))
+		return nil, toHumaError(ctx, err)
 	}
 
-	token, tokenHash, err := generateToken()
-	if err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_generate_token"))
-	}
-
-	expiresAt := time.Now().Add(h.cfg.MagicLinkTTL)
-	if _, err := h.pool.Exec(ctx,
-		`INSERT INTO magic_link_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)`,
-		userID,
-		tokenHash,
-		expiresAt,
-	); err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_store_token"))
-	}
-
-	var devLoginURL *string
-	if h.cfg.Env == "dev" {
-		link := h.cfg.MagicLinkBaseURL + "?token=" + token
-		devLoginURL = &link
-		log.Printf("dev magic link for %s: %s", email, link)
+	if devLoginURL != nil {
+		log.Printf("dev magic link for %s: %s", input.Body.Email, *devLoginURL)
 	} else {
-		log.Printf("magic link requested for %s", email)
+		log.Printf("magic link requested for %s", input.Body.Email)
 	}
 
 	return &magicLinkResponse{Body: struct {
@@ -106,60 +74,9 @@ type verifyResponse struct {
 }
 
 func (h *authHandler) verifyMagicLink(ctx context.Context, input *verifyRequest) (*verifyResponse, error) {
-	if h.pool == nil {
-		return nil, huma.Error503ServiceUnavailable(i18n.T(ctx, "errors.database_unavailable"))
-	}
-
-	token := strings.TrimSpace(input.Body.Token)
-	if token == "" {
-		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.token_required"))
-	}
-
-	tokenHash := sha256.Sum256([]byte(token))
-
-	tx, err := h.pool.Begin(ctx)
+	accessToken, userID, email, err := h.svc.VerifyMagicLink(ctx, input.Body.Token)
 	if err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_start_tx"))
-	}
-	defer func() {
-		_ = tx.Rollback(ctx)
-	}()
-
-	var tokenID string
-	var userID string
-	row := tx.QueryRow(ctx,
-		`SELECT id, user_id FROM magic_link_tokens
-		 WHERE token_hash = $1 AND consumed_at IS NULL AND expires_at > now()
-		 FOR UPDATE`,
-		tokenHash[:],
-	)
-	if err := row.Scan(&tokenID, &userID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, huma.Error401Unauthorized(i18n.T(ctx, "errors.token_invalid"))
-		}
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_load_token"))
-	}
-
-	if _, err := tx.Exec(ctx, `UPDATE magic_link_tokens SET consumed_at = now() WHERE id = $1`, tokenID); err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_consume_token"))
-	}
-
-	if _, err := tx.Exec(ctx, `UPDATE users SET last_login_at = now() WHERE id = $1`, userID); err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_update_login"))
-	}
-
-	var email string
-	if err := tx.QueryRow(ctx, `SELECT email FROM users WHERE id = $1`, userID).Scan(&email); err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_load_user"))
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_commit_token"))
-	}
-
-	accessToken, _, err := generateToken()
-	if err != nil {
-		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_generate_access_token"))
+		return nil, toHumaError(ctx, err)
 	}
 
 	resp := &verifyResponse{}
@@ -176,32 +93,4 @@ type logoutResponse struct {
 
 func (h *authHandler) logout(ctx context.Context, input *struct{}) (*logoutResponse, error) {
 	return &logoutResponse{Ok: true}, nil
-}
-
-func (h *authHandler) ensureUser(ctx context.Context, email string) (string, error) {
-	var id string
-	err := h.pool.QueryRow(ctx, `SELECT id FROM users WHERE email = $1`, email).Scan(&id)
-	if err == nil {
-		return id, nil
-	}
-	if !errors.Is(err, pgx.ErrNoRows) {
-		return "", err
-	}
-
-	err = h.pool.QueryRow(ctx, `INSERT INTO users (email) VALUES ($1) RETURNING id`, email).Scan(&id)
-	if err != nil {
-		return "", err
-	}
-
-	return id, nil
-}
-
-func generateToken() (string, []byte, error) {
-	bytes := make([]byte, 32)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", nil, err
-	}
-	encoded := base64.RawURLEncoding.EncodeToString(bytes)
-	hash := sha256.Sum256([]byte(encoded))
-	return encoded, hash[:], nil
 }
