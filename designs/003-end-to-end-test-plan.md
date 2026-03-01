@@ -1,3 +1,8 @@
+---
+description: "End-to-end test plan for Amiglot API."
+whenToUse: "Read when running or updating API E2E scenarios."
+---
+
 # Amiglot API — End-to-End Test Plan
 
 ## 1. Scope

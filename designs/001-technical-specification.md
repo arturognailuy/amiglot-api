@@ -1,3 +1,8 @@
+---
+description: "Backend technical specification for Amiglot API."
+whenToUse: "Read when implementing API features, data models, or endpoint behavior."
+---
+
 # Amiglot API — Technical Specification (Backend)
 
 > Backend technical constraints and coding standards live in `designs/000-architecture-guidelines.md`.
