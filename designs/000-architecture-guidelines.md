@@ -1,3 +1,8 @@
+---
+description: "Backend architecture and coding standards for Amiglot API."
+whenToUse: "Read when designing handlers/services/repos, i18n, or error handling for the API."
+---
+
 # Amiglot API — Architecture & Coding Guidelines
 
 ## 0. Scope

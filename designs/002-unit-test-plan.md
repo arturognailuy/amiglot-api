@@ -1,3 +1,8 @@
+---
+description: "Unit test plan for Amiglot API."
+whenToUse: "Read when adding or updating backend unit tests and ensuring coverage."
+---
+
 # Amiglot API — Unit Test Plan
 
 ## 1. Purpose
