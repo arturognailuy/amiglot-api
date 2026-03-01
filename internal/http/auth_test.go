@@ -98,3 +98,16 @@ func TestVerifyMagicLink_NoPool(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "database unavailable")
 }
+
+func TestGenerateToken(t *testing.T) {
+	first, firstHash, err := generateToken()
+	require.NoError(t, err)
+	require.NotEmpty(t, first)
+	require.Len(t, firstHash, 32)
+
+	second, secondHash, err := generateToken()
+	require.NoError(t, err)
+	require.NotEmpty(t, second)
+	require.Len(t, secondHash, 32)
+	require.NotEqual(t, first, second)
+}
