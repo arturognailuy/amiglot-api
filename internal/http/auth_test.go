@@ -21,7 +21,6 @@ func newAuthHandler(pool *pgxpool.Pool, cfg config.Config) *authHandler {
 
 func TestRequestMagicLink_Validation(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	h := newAuthHandler(pool, config.Config{MagicLinkTTL: 15 * time.Minute})
 
@@ -32,7 +31,6 @@ func TestRequestMagicLink_Validation(t *testing.T) {
 
 func TestRequestMagicLink_DevFlow(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	h := newAuthHandler(pool, config.Config{Env: "dev", MagicLinkBaseURL: "http://localhost:3000/auth/verify", MagicLinkTTL: 10 * time.Minute})
 
@@ -52,7 +50,6 @@ func TestRequestMagicLink_DevFlow(t *testing.T) {
 
 func TestVerifyMagicLink_Flows(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	repo := repository.NewAuthRepository(pool)
 	h := newAuthHandler(pool, config.Config{MagicLinkTTL: 10 * time.Minute})

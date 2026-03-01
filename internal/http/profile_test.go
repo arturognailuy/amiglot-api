@@ -20,7 +20,6 @@ func newProfileHandler(pool *pgxpool.Pool) *profileHandler {
 
 func TestProfileValidation(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ('user@example.com') RETURNING id`).Scan(&userID)
@@ -55,7 +54,6 @@ func TestProfileValidation(t *testing.T) {
 
 func TestLanguagesValidation(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ('user2@example.com') RETURNING id`).Scan(&userID)
@@ -84,7 +82,6 @@ func TestLanguagesValidation(t *testing.T) {
 
 func TestAvailabilityRequiresProfile(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ('user3@example.com') RETURNING id`).Scan(&userID)
@@ -101,7 +98,6 @@ func TestAvailabilityRequiresProfile(t *testing.T) {
 
 func TestGetProfile_NotFound(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ($1) RETURNING id`, "user4@example.com").Scan(&userID)
@@ -122,7 +118,6 @@ func TestGetProfile_NotFound(t *testing.T) {
 
 func TestProfileFlow_Success(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ($1) RETURNING id`, "user5@example.com").Scan(&userID)
@@ -170,7 +165,6 @@ func TestProfileFlow_Success(t *testing.T) {
 
 func TestAvailabilityValidation(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ($1) RETURNING id`, "user6@example.com").Scan(&userID)
@@ -220,7 +214,6 @@ func TestIsUniqueViolation(t *testing.T) {
 
 func TestHandleAvailability(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ('user7@example.com') RETURNING id`).Scan(&userID)

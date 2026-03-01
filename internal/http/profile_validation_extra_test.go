@@ -9,7 +9,6 @@ import (
 
 func TestProfileValidation_AdditionalErrors(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ($1) RETURNING id`, "extra@example.com").Scan(&userID)
@@ -73,7 +72,6 @@ func TestProfileValidation_AdditionalErrors(t *testing.T) {
 
 func TestLanguagesValidation_AdditionalErrors(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ($1) RETURNING id`, "extra2@example.com").Scan(&userID)
@@ -128,7 +126,6 @@ func TestLanguagesValidation_AdditionalErrors(t *testing.T) {
 
 func TestAvailabilityValidation_AdditionalErrors(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ($1) RETURNING id`, "extra3@example.com").Scan(&userID)
@@ -163,7 +160,6 @@ func TestAvailabilityValidation_AdditionalErrors(t *testing.T) {
 
 func TestHandleAvailability_MissingUserID(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	h := newProfileHandler(pool)
 
