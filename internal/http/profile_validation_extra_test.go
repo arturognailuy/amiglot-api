@@ -17,6 +17,11 @@ func TestProfileValidation_AdditionalErrors(t *testing.T) {
 
 	h := &profileHandler{pool: pool}
 
+	_, err = h.putLanguages(context.Background(), &languagesPutRequest{UserID: userID, Body: struct {
+		Languages []languagePayload `json:"languages"`
+	}{Languages: []languagePayload{{LanguageCode: "pt-br", Level: 5, IsNative: true}}}})
+	require.NoError(t, err)
+
 	_, err = h.putProfile(context.Background(), &profileUpdateRequest{UserID: userID, Body: struct {
 		Handle      string  `json:"handle"`
 		BirthYear   *int    `json:"birth_year,omitempty"`
@@ -83,9 +88,14 @@ func TestLanguagesValidation_AdditionalErrors(t *testing.T) {
 
 	_, err = h.putLanguages(context.Background(), &languagesPutRequest{UserID: userID, Body: struct {
 		Languages []languagePayload `json:"languages"`
+	}{Languages: []languagePayload{{LanguageCode: "pt-br", Level: 5, IsNative: true}}}})
+	require.NoError(t, err)
+
+	_, err = h.putLanguages(context.Background(), &languagesPutRequest{UserID: userID, Body: struct {
+		Languages []languagePayload `json:"languages"`
 	}{Languages: []languagePayload{{LanguageCode: "english", Level: 2, IsNative: false}}}})
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "language_code must be ISO-639")
+	require.Contains(t, err.Error(), "language_code must be BCP-47")
 
 	_, err = h.putLanguages(context.Background(), &languagesPutRequest{UserID: userID, Body: struct {
 		Languages []languagePayload `json:"languages"`
@@ -122,6 +132,11 @@ func TestAvailabilityValidation_AdditionalErrors(t *testing.T) {
 
 	h := &profileHandler{pool: pool}
 
+	_, err = h.putLanguages(context.Background(), &languagesPutRequest{UserID: userID, Body: struct {
+		Languages []languagePayload `json:"languages"`
+	}{Languages: []languagePayload{{LanguageCode: "pt-br", Level: 5, IsNative: true}}}})
+	require.NoError(t, err)
+
 	_, err = h.putProfile(context.Background(), &profileUpdateRequest{UserID: userID, Body: struct {
 		Handle      string  `json:"handle"`
 		BirthYear   *int    `json:"birth_year,omitempty"`
@@ -152,6 +167,11 @@ func TestHandleAvailability_MissingUserID(t *testing.T) {
 	defer pool.Close()
 
 	h := &profileHandler{pool: pool}
+
+	_, err = h.putLanguages(context.Background(), &languagesPutRequest{UserID: userID, Body: struct {
+		Languages []languagePayload `json:"languages"`
+	}{Languages: []languagePayload{{LanguageCode: "pt-br", Level: 5, IsNative: true}}}})
+	require.NoError(t, err)
 
 	_, err := h.checkHandleAvailability(context.Background(), &handleCheckRequest{UserID: "", Handle: "valid"})
 	require.Error(t, err)
