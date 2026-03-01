@@ -81,6 +81,15 @@ func TestLanguagesValidation_AdditionalErrors(t *testing.T) {
 
 	h := &profileHandler{pool: pool}
 
+	_, err = h.putProfile(context.Background(), &profileUpdateRequest{UserID: userID, Body: struct {
+		Handle      string  `json:"handle"`
+		BirthYear   *int    `json:"birth_year,omitempty"`
+		BirthMonth  *int16  `json:"birth_month,omitempty"`
+		CountryCode *string `json:"country_code,omitempty"`
+		Timezone    string  `json:"timezone"`
+	}{Handle: "validhandle", Timezone: "UTC"}})
+	require.NoError(t, err)
+
 	_, err = h.putLanguages(context.Background(), &languagesPutRequest{UserID: userID, Body: struct {
 		Languages []languagePayload `json:"languages"`
 	}{Languages: []languagePayload{{LanguageCode: "pt-br", Level: 5, IsNative: true}}}})
