@@ -20,7 +20,7 @@
   "errors.failed_update_discoverable": "更新可发现状态失败",
   "errors.languages_required": "必须提供语言",
   "errors.language_code_required": "language_code 为必填",
-  "errors.language_code_invalid": "language_code 必须是 ISO-639（2-3 个字母）",
+  "errors.language_code_invalid": "language_code 必须是 BCP-47（例如 pt-br）",
   "errors.level_range": "level 必须在 0 到 5 之间",
   "errors.language_conflict": "语言不能同时为母语和目标语言",
   "errors.native_level": "母语等级必须为 5",

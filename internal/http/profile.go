@@ -24,9 +24,14 @@ const (
 
 var (
 	handlePattern       = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
-	languageCodePattern = regexp.MustCompile(`^[a-z]{2,3}$`)
+	languageCodePattern = regexp.MustCompile(`^[a-z]{2,3}([_-][a-z0-9]{2,8})*$`)
 	countryCodePattern  = regexp.MustCompile(`^[A-Z]{2}$`)
 )
+
+func normalizeLanguageCode(code string) string {
+	normalized := strings.ToLower(strings.TrimSpace(code))
+	return strings.ReplaceAll(normalized, "_", "-")
+}
 
 type profileHandler struct {
 	pool *pgxpool.Pool
@@ -330,10 +335,11 @@ func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRe
 		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.languages_required"))
 	}
 
+	normalizedLanguages := make([]languagePayload, 0, len(languages))
 	seen := make(map[string]struct{})
 	nativeCount := 0
 	for _, lang := range languages {
-		code := strings.ToLower(strings.TrimSpace(lang.LanguageCode))
+		code := normalizeLanguageCode(lang.LanguageCode)
 		if code == "" {
 			return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.language_code_required"))
 		}
@@ -359,6 +365,9 @@ func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRe
 		if lang.IsNative {
 			nativeCount++
 		}
+		normalizedLang := lang
+		normalizedLang.LanguageCode = code
+		normalizedLanguages = append(normalizedLanguages, normalizedLang)
 	}
 	if nativeCount == 0 {
 		return nil, huma.Error400BadRequest(i18n.T(ctx, "errors.native_required"))
@@ -376,11 +385,11 @@ func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRe
 		return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_clear_languages"))
 	}
 
-	for _, lang := range languages {
+	for _, lang := range normalizedLanguages {
 		_, err := tx.Exec(ctx, `
 			INSERT INTO user_languages (user_id, language_code, level, is_native, is_target, description)
 			VALUES ($1, $2, $3, $4, $5, $6)
-		`, userID, strings.ToLower(strings.TrimSpace(lang.LanguageCode)), lang.Level, lang.IsNative, lang.IsTarget, lang.Description)
+		`, userID, lang.LanguageCode, lang.Level, lang.IsNative, lang.IsTarget, lang.Description)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(i18n.T(ctx, "errors.failed_save_languages"))
 		}
@@ -397,7 +406,7 @@ func (h *profileHandler) putLanguages(ctx context.Context, input *languagesPutRe
 	return &languagesPutResponse{
 		Body: struct {
 			Languages []languagePayload `json:"languages"`
-		}{Languages: languages},
+		}{Languages: normalizedLanguages},
 	}, nil
 }
 

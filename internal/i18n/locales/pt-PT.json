@@ -20,7 +20,7 @@
   "errors.failed_update_discoverable": "falha ao atualizar estado de descoberta",
   "errors.languages_required": "idiomas são obrigatórios",
   "errors.language_code_required": "language_code é obrigatório",
-  "errors.language_code_invalid": "language_code deve ser ISO-639 (2-3 letras)",
+  "errors.language_code_invalid": "language_code deve ser BCP-47 (ex: pt-br)",
   "errors.level_range": "level deve estar entre 0 e 5",
   "errors.language_conflict": "o idioma não pode ser nativo e alvo",
   "errors.native_level": "nível nativo deve ser 5",

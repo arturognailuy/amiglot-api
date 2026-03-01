@@ -20,7 +20,7 @@
   "errors.failed_update_discoverable": "failed to update discoverable status",
   "errors.languages_required": "languages are required",
   "errors.language_code_required": "language_code is required",
-  "errors.language_code_invalid": "language_code must be ISO-639 (2-3 letters)",
+  "errors.language_code_invalid": "language_code must be BCP-47 (e.g., pt-br)",
   "errors.level_range": "level must be between 0 and 5",
   "errors.language_conflict": "language cannot be both native and target",
   "errors.native_level": "native level must be level 5",
