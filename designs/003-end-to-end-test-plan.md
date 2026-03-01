@@ -7,7 +7,7 @@ End-to-end coverage for the current API feature set: health, authentication, pro
 - API running locally on port 6176
 - Postgres dev database
 - Base URL: `https://test.gnailuy.com/api/v1`
-- Localization via `Accept-Language`
+- Localization via `Accept-Language` (run localization assertions in **English**, **Chinese**, and **Portuguese**)
 
 ## 3. Health
 1. `GET /healthz` returns `{ ok: true }` and build metadata.
