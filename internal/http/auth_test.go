@@ -5,16 +5,24 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
 
 	"github.com/gnailuy/amiglot-api/internal/config"
+	"github.com/gnailuy/amiglot-api/internal/repository"
+	"github.com/gnailuy/amiglot-api/internal/service"
 )
+
+func newAuthHandler(pool *pgxpool.Pool, cfg config.Config) *authHandler {
+	repo := repository.NewAuthRepository(pool)
+	svc := service.NewAuthService(cfg, repo)
+	return &authHandler{svc: svc}
+}
 
 func TestRequestMagicLink_Validation(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
-	h := &authHandler{cfg: config.Config{MagicLinkTTL: 15 * time.Minute}, pool: pool}
+	h := newAuthHandler(pool, config.Config{MagicLinkTTL: 15 * time.Minute})
 
 	_, err := h.requestMagicLink(context.Background(), &magicLinkRequest{})
 	require.Error(t, err)
@@ -23,9 +31,8 @@ func TestRequestMagicLink_Validation(t *testing.T) {
 
 func TestRequestMagicLink_DevFlow(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
-	h := &authHandler{cfg: config.Config{Env: "dev", MagicLinkBaseURL: "http://localhost:3000/auth/verify", MagicLinkTTL: 10 * time.Minute}, pool: pool}
+	h := newAuthHandler(pool, config.Config{Env: "dev", MagicLinkBaseURL: "http://localhost:3000/auth/verify", MagicLinkTTL: 10 * time.Minute})
 
 	resp, err := h.requestMagicLink(context.Background(), &magicLinkRequest{Body: struct {
 		Email string `json:"email"`
@@ -43,14 +50,14 @@ func TestRequestMagicLink_DevFlow(t *testing.T) {
 
 func TestVerifyMagicLink_Flows(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
-	h := &authHandler{cfg: config.Config{MagicLinkTTL: 10 * time.Minute}, pool: pool}
+	repo := repository.NewAuthRepository(pool)
+	h := newAuthHandler(pool, config.Config{MagicLinkTTL: 10 * time.Minute})
 
-	userID, err := h.ensureUser(context.Background(), "user@example.com")
+	userID, err := repo.EnsureUser(context.Background(), "user@example.com")
 	require.NoError(t, err)
 
-	token, tokenHash, err := generateToken()
+	token, tokenHash, err := service.GenerateToken()
 	require.NoError(t, err)
 
 	_, err = pool.Exec(context.Background(), `
@@ -80,7 +87,7 @@ func TestVerifyMagicLink_Flows(t *testing.T) {
 }
 
 func TestRequestMagicLink_NoPool(t *testing.T) {
-	h := &authHandler{cfg: config.Config{MagicLinkTTL: 5 * time.Minute}, pool: nil}
+	h := newAuthHandler(nil, config.Config{MagicLinkTTL: 5 * time.Minute})
 
 	_, err := h.requestMagicLink(context.Background(), &magicLinkRequest{Body: struct {
 		Email string `json:"email"`
@@ -90,7 +97,7 @@ func TestRequestMagicLink_NoPool(t *testing.T) {
 }
 
 func TestVerifyMagicLink_NoPool(t *testing.T) {
-	h := &authHandler{cfg: config.Config{MagicLinkTTL: 5 * time.Minute}, pool: nil}
+	h := newAuthHandler(nil, config.Config{MagicLinkTTL: 5 * time.Minute})
 
 	_, err := h.verifyMagicLink(context.Background(), &verifyRequest{Body: struct {
 		Token string `json:"token"`
@@ -100,12 +107,12 @@ func TestVerifyMagicLink_NoPool(t *testing.T) {
 }
 
 func TestGenerateToken(t *testing.T) {
-	first, firstHash, err := generateToken()
+	first, firstHash, err := service.GenerateToken()
 	require.NoError(t, err)
 	require.NotEmpty(t, first)
 	require.Len(t, firstHash, 32)
 
-	second, secondHash, err := generateToken()
+	second, secondHash, err := service.GenerateToken()
 	require.NoError(t, err)
 	require.NotEmpty(t, second)
 	require.Len(t, secondHash, 32)

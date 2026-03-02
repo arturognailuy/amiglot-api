@@ -5,18 +5,27 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
+
+	"github.com/gnailuy/amiglot-api/internal/repository"
+	"github.com/gnailuy/amiglot-api/internal/service"
 )
+
+func newProfileHandler(pool *pgxpool.Pool) *profileHandler {
+	repo := repository.NewProfileRepository(pool)
+	svc := service.NewProfileService(repo)
+	return &profileHandler{svc: svc}
+}
 
 func TestProfileValidation(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ('user@example.com') RETURNING id`).Scan(&userID)
 	require.NoError(t, err)
 
-	h := &profileHandler{pool: pool}
+	h := newProfileHandler(pool)
 
 	_, err = h.putProfile(context.Background(), &profileUpdateRequest{UserID: userID})
 	require.Error(t, err)
@@ -45,13 +54,12 @@ func TestProfileValidation(t *testing.T) {
 
 func TestLanguagesValidation(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ('user2@example.com') RETURNING id`).Scan(&userID)
 	require.NoError(t, err)
 
-	h := &profileHandler{pool: pool}
+	h := newProfileHandler(pool)
 
 	_, err = h.putLanguages(context.Background(), &languagesPutRequest{UserID: userID, Body: struct {
 		Languages []languagePayload `json:"languages"`
@@ -74,13 +82,12 @@ func TestLanguagesValidation(t *testing.T) {
 
 func TestAvailabilityRequiresProfile(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ('user3@example.com') RETURNING id`).Scan(&userID)
 	require.NoError(t, err)
 
-	h := &profileHandler{pool: pool}
+	h := newProfileHandler(pool)
 
 	_, err = h.putAvailability(context.Background(), &availabilityPutRequest{UserID: userID, Body: struct {
 		Availability []availabilityPayload `json:"availability"`
@@ -91,13 +98,12 @@ func TestAvailabilityRequiresProfile(t *testing.T) {
 
 func TestGetProfile_NotFound(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ($1) RETURNING id`, "user4@example.com").Scan(&userID)
 	require.NoError(t, err)
 
-	h := &profileHandler{pool: pool}
+	h := newProfileHandler(pool)
 
 	resp, err := h.getProfile(context.Background(), &profileGetRequest{UserID: userID})
 	require.NoError(t, err)
@@ -112,13 +118,12 @@ func TestGetProfile_NotFound(t *testing.T) {
 
 func TestProfileFlow_Success(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ($1) RETURNING id`, "user5@example.com").Scan(&userID)
 	require.NoError(t, err)
 
-	h := &profileHandler{pool: pool}
+	h := newProfileHandler(pool)
 
 	birthYear := 1992
 	birthMonth := int16(6)
@@ -160,13 +165,12 @@ func TestProfileFlow_Success(t *testing.T) {
 
 func TestAvailabilityValidation(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ($1) RETURNING id`, "user6@example.com").Scan(&userID)
 	require.NoError(t, err)
 
-	h := &profileHandler{pool: pool}
+	h := newProfileHandler(pool)
 
 	_, err = h.putProfile(context.Background(), &profileUpdateRequest{UserID: userID, Body: struct {
 		Handle      string  `json:"handle"`
@@ -204,13 +208,12 @@ func TestAvailabilityValidation(t *testing.T) {
 
 func TestIsUniqueViolation(t *testing.T) {
 	err := &pgconn.PgError{Code: "23505"}
-	require.True(t, isUniqueViolation(err))
-	require.False(t, isUniqueViolation(nil))
+	require.True(t, repository.IsUniqueViolation(err))
+	require.False(t, repository.IsUniqueViolation(nil))
 }
 
 func TestHandleAvailability(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	var userID string
 	err := pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ('user7@example.com') RETURNING id`).Scan(&userID)
@@ -220,7 +223,7 @@ func TestHandleAvailability(t *testing.T) {
 	err = pool.QueryRow(context.Background(), `INSERT INTO users (email) VALUES ('user8@example.com') RETURNING id`).Scan(&otherUserID)
 	require.NoError(t, err)
 
-	h := &profileHandler{pool: pool}
+	h := newProfileHandler(pool)
 
 	_, err = h.putProfile(context.Background(), &profileUpdateRequest{UserID: userID, Body: struct {
 		Handle      string  `json:"handle"`

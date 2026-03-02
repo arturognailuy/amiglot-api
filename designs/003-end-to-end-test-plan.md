@@ -27,6 +27,7 @@ End-to-end coverage for the current API feature set: health, authentication, pro
 2. `PUT /profile` creates/updates profile with required fields.
 3. `GET /profile/handle/check` returns availability (true when unused or owned by user).
 4. Handle normalization accepts leading `@` and stores lowercased handle.
+5. Handle format for E2E: **alphanumeric only** (letters/numbers; no underscores or symbols).
 
 ## 6. Languages
 1. `PUT /profile/languages` replaces list.
