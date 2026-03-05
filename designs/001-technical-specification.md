@@ -40,7 +40,7 @@ CREATE TABLE profiles (
   discoverable BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  CHECK (handle ~ '^[a-zA-Z0-9_]+$')
+  CHECK (handle ~ '^[a-zA-Z0-9]+$')
 );
 
 -- keep handle_norm in lowercase (app-side or trigger)

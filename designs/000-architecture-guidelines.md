@@ -18,7 +18,7 @@ This document is the single source of truth for backend architecture and coding 
 ## 2. Data & Schema Conventions
 - **Primary keys:** UUID (`gen_random_uuid()`)
 - **Timestamps:** `timestamptz` in UTC
-- **Handles:** stored **without** `@`, UI displays with `@` (letters/numbers/underscore; API accepts an optional leading `@` and normalizes it away)
+- **Handles:** stored **without** `@`, UI displays with `@` (letters/numbers; API accepts an optional leading `@` and normalizes it away)
 - **Timezone:** IANA name (e.g., `America/Vancouver`)
 - **Languages:** BCP-47 language code (e.g., `en`, `es-ES`)
 
