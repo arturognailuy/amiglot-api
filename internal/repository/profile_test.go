@@ -38,7 +38,7 @@ func TestProfileRepositoryFlow(t *testing.T) {
 	require.Equal(t, "tester", loadedProfile.Handle)
 	require.Equal(t, "UTC", loadedProfile.Timezone)
 
-	languages := []model.Language{{LanguageCode: "en", Level: 5, IsNative: true}}
+	languages := []model.Language{{LanguageCode: "en", Level: 5, IsNative: true, SortOrder: 1}}
 	err = repo.ReplaceLanguages(context.Background(), userID, languages)
 	require.NoError(t, err)
 
@@ -46,7 +46,7 @@ func TestProfileRepositoryFlow(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, hasNative)
 
-	availability := []model.AvailabilitySlot{{Weekday: 1, StartLocalTime: "09:00", EndLocalTime: "10:00", Timezone: "UTC"}}
+	availability := []model.AvailabilitySlot{{Weekday: 1, StartLocalTime: "09:00", EndLocalTime: "10:00", Timezone: "UTC", SortOrder: 1}}
 	err = repo.ReplaceAvailability(context.Background(), userID, availability)
 	require.NoError(t, err)
 
