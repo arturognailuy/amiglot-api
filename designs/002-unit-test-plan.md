@@ -22,8 +22,8 @@ Establish a unit testing baseline for the API repo and define coverage prioritie
 - **Profile validation** (`internal/http/profile.go`):
   - Handle rules (required, length, alphanumeric).
   - Timezone validation using `time.LoadLocation`.
-  - Language validation (code, native/target rules, duplicate detection).
-  - Availability validation (weekday bounds, start < end, timezone validity).
+  - Language validation (code, native/target rules, duplicate detection, `order` normalization).
+  - Availability validation (weekday bounds, start < end, timezone validity, grouped `order` normalization).
 - **Locale middleware** (`internal/http/router.go`): Accept-Language → context locale.
 
 ### P1

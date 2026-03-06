@@ -62,6 +62,7 @@ CREATE TABLE user_languages (
   is_native BOOLEAN NOT NULL DEFAULT false,
   is_target BOOLEAN NOT NULL DEFAULT false,
   description TEXT,
+  sort_order INT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (user_id, language_code)
@@ -74,6 +75,7 @@ CREATE INDEX user_languages_language_idx ON user_languages(language_code, level)
 > Rules enforced by the app:
 > - At least one `is_native = true` per user
 > - Target languages can overlap with native/teachable languages but do not have to
+> - `sort_order` preserves user-defined ordering (API field: `order`)
 
 **availability_slots**
 Weekly availability stored in **local time + timezone** (no static UTC columns). Matching converts to UTC for specific dates at query time to handle DST shifts correctly.
@@ -86,6 +88,7 @@ CREATE TABLE availability_slots (
   start_local_time TIME NOT NULL,
   end_local_time TIME NOT NULL,
   timezone TEXT NOT NULL,
+  sort_order INT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -98,6 +101,7 @@ CREATE INDEX availability_local_idx ON availability_slots(weekday, start_local_t
 > - App ensures `start < end` and handles wrap-around by splitting into two rows.
 > - `timezone` defaults to the profile timezone but can be overridden per slot.
 > - Matching converts `(date + weekday + start/end_local_time AT TIME ZONE timezone)` into UTC during search.
+> - Slots with identical `(start_local_time, end_local_time, timezone)` must share the same `sort_order` (API field: `order`) to keep grouped ordering stable.
 
 ### 1.2 Matching & Messaging
 
@@ -282,6 +286,7 @@ VALUES (:match_id, :sender_id, :body);
 ### 1.5 Migration Notes
 - Existing `users` table already present in `amiglot-api` migrations; add new tables via sequential migrations.
 - When user changes handle, update `profiles.handle` and `profiles.handle_norm`.
+- Add `sort_order` columns to `user_languages` and `availability_slots`; backfill using existing row order per user (e.g., `created_at ASC`). For availability, assign the same order to slots sharing `(start_local_time, end_local_time, timezone)`.
 - Availability slots are stored in local time + timezone; matching converts to UTC at query time, so DST shifts are handled without rewriting rows.
 
 ## 2. API Contract Implementation Notes
@@ -295,6 +300,8 @@ VALUES (:match_id, :sender_id, :body);
 ### 2.2 Validation & Business Rules
 - Handle uniqueness (case-insensitive); store normalized value in `profiles.handle_norm`.
 - Require at least one native language on profile creation.
+- Persist language ordering via `sort_order` (API field `order`); normalize missing values based on request list order.
+- Persist availability ordering via `sort_order` (API field `order`); slots sharing `(start_local_time, end_local_time, timezone)` must share the same order (normalize to the lowest provided order in the group).
 - Enforce `start_local_time < end_local_time` (wrap-around slots split into two rows).
 - `match_requests`: enforce one pending request between user pairs.
 
