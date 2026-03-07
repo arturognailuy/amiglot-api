@@ -14,9 +14,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testLockID int64 = 424242
+
 func TestQueries_UserAndTokenFlow(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	q := New(pool)
 
@@ -56,10 +57,35 @@ func openTestPool(t *testing.T) *pgxpool.Pool {
 		t.Fatalf("open db: %v", err)
 	}
 
+	t.Cleanup(func() {
+		pool.Close()
+	})
+
+	acquireTestLock(t, pool)
 	applyMigrations(t, pool)
 	resetTables(t, pool)
 
 	return pool
+}
+
+func acquireTestLock(t *testing.T, pool *pgxpool.Pool) {
+	t.Helper()
+
+	ctx := context.Background()
+	conn, err := pool.Acquire(ctx)
+	if err != nil {
+		t.Fatalf("acquire lock conn: %v", err)
+	}
+	if _, err := conn.Exec(ctx, `SELECT pg_advisory_lock($1)`, testLockID); err != nil {
+		conn.Release()
+		t.Fatalf("acquire db lock: %v", err)
+	}
+
+	t.Cleanup(func() {
+		ctx := context.Background()
+		_, _ = conn.Exec(ctx, `SELECT pg_advisory_unlock($1)`, testLockID)
+		conn.Release()
+	})
 }
 
 func applyMigrations(t *testing.T, pool *pgxpool.Pool) {
@@ -109,7 +135,6 @@ func resetTables(t *testing.T, pool *pgxpool.Pool) {
 
 func TestQueries_GetUserByID_UpdateUserLastLogin(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	q := New(pool)
 	user, err := q.CreateUser(context.Background(), "update@example.com")
@@ -130,7 +155,6 @@ func TestQueries_GetUserByID_UpdateUserLastLogin(t *testing.T) {
 
 func TestQueries_WithTx(t *testing.T) {
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	ctx := context.Background()
 	tx, err := pool.Begin(ctx)
