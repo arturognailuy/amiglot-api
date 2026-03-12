@@ -33,12 +33,14 @@ End-to-end coverage for the current API feature set: health, authentication, pro
 1. `PUT /profile/languages` replaces list.
 2. Enforce at least one native language.
 3. Validate level bounds, duplicates, and native/target constraints.
+4. Persist `order` and return languages sorted by `order` ascending.
 
 ## 7. Availability
 1. `PUT /profile/availability` replaces list.
 2. Validate start < end and weekday bounds.
 3. Timezone validation on slot and fallback to profile timezone.
 4. Reject duplicate availability slots.
+5. Persist `order` and return grouped slots sorted by shared `order` ascending (slots with identical start/end/timezone share the same order).
 
 ## 8. Discoverable Flag
 1. After saving profile + native language, profile `discoverable` becomes true.

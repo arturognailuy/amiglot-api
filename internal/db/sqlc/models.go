@@ -15,6 +15,7 @@ type AvailabilitySlot struct {
 	StartLocalTime pgtype.Time
 	EndLocalTime   pgtype.Time
 	Timezone       string
+	SortOrder      int32
 	CreatedAt      pgtype.Timestamptz
 	UpdatedAt      pgtype.Timestamptz
 }
@@ -56,6 +57,7 @@ type UserLanguage struct {
 	IsNative     bool
 	IsTarget     bool
 	Description  pgtype.Text
+	SortOrder    int32
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 }

@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS user_languages (
   is_native BOOLEAN NOT NULL DEFAULT false,
   is_target BOOLEAN NOT NULL DEFAULT false,
   description TEXT,
+  sort_order INT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (user_id, language_code)
@@ -50,6 +51,7 @@ CREATE TABLE IF NOT EXISTS availability_slots (
   start_local_time TIME NOT NULL,
   end_local_time TIME NOT NULL,
   timezone TEXT NOT NULL,
+  sort_order INT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -200,7 +201,7 @@ func (s *ProfileService) UpdateLanguages(ctx context.Context, userID string, lan
 	normalizedLanguages := make([]model.Language, 0, len(languages))
 	seen := make(map[string]struct{})
 	nativeCount := 0
-	for _, lang := range languages {
+	for index, lang := range languages {
 		code := normalizeLanguageCode(lang.LanguageCode)
 		if code == "" {
 			return nil, &Error{Status: 400, Key: "errors.language_code_required"}
@@ -229,15 +230,31 @@ func (s *ProfileService) UpdateLanguages(ctx context.Context, userID string, lan
 		}
 		normalizedLang := lang
 		normalizedLang.LanguageCode = code
+		if normalizedLang.SortOrder <= 0 {
+			normalizedLang.SortOrder = index + 1
+		}
 		normalizedLanguages = append(normalizedLanguages, normalizedLang)
 	}
 	if nativeCount == 0 {
 		return nil, &Error{Status: 400, Key: "errors.native_required"}
 	}
 
+	// Assign default SortOrder if missing
+	for i := range normalizedLanguages {
+		if normalizedLanguages[i].SortOrder <= 0 {
+			normalizedLanguages[i].SortOrder = i + 1
+		}
+	}
+
 	if err := s.repo.ReplaceLanguages(ctx, userID, normalizedLanguages); err != nil {
 		return nil, &Error{Status: 500, Key: "errors.failed_save_languages", Err: err}
 	}
+	sort.SliceStable(normalizedLanguages, func(i, j int) bool {
+		if normalizedLanguages[i].SortOrder == normalizedLanguages[j].SortOrder {
+			return i < j
+		}
+		return normalizedLanguages[i].SortOrder < normalizedLanguages[j].SortOrder
+	})
 
 	if err := s.recalcDiscoverable(ctx, userID); err != nil {
 		return nil, err
@@ -268,6 +285,8 @@ func (s *ProfileService) UpdateAvailability(ctx context.Context, userID string, 
 		return nil, &Error{Status: 400, Key: "errors.availability_limit"}
 	}
 	seen := make(map[string]struct{})
+	groupOrders := make(map[string]int)
+	groupFirstIndex := make(map[string]int)
 	for i := range slots {
 		if slots[i].Weekday < 0 || slots[i].Weekday > 6 {
 			return nil, &Error{Status: 400, Key: "errors.weekday_range"}
@@ -298,16 +317,69 @@ func (s *ProfileService) UpdateAvailability(ctx context.Context, userID string, 
 		}
 		slots[i].Timezone = tz
 
-		key := fmt.Sprintf("%d|%s|%s|%s", slots[i].Weekday, start, end, tz)
-		if _, ok := seen[key]; ok {
+		dupKey := fmt.Sprintf("%d|%s|%s|%s", slots[i].Weekday, start, end, tz)
+		if _, ok := seen[dupKey]; ok {
 			return nil, &Error{Status: 400, Key: "errors.availability_duplicate"}
 		}
-		seen[key] = struct{}{}
+		seen[dupKey] = struct{}{}
+
+		groupKey := fmt.Sprintf("%s|%s|%s", start, end, tz)
+		if _, ok := groupFirstIndex[groupKey]; !ok {
+			groupFirstIndex[groupKey] = i
+		}
+		if slots[i].SortOrder > 0 {
+			current, ok := groupOrders[groupKey]
+			if !ok || slots[i].SortOrder < current {
+				groupOrders[groupKey] = slots[i].SortOrder
+			}
+		}
+	}
+
+	usedOrders := make(map[int]struct{})
+	for _, order := range groupOrders {
+		if order > 0 {
+			usedOrders[order] = struct{}{}
+		}
+	}
+	groupKeys := make([]string, 0, len(groupFirstIndex))
+	for key := range groupFirstIndex {
+		groupKeys = append(groupKeys, key)
+	}
+	sort.SliceStable(groupKeys, func(i, j int) bool {
+		return groupFirstIndex[groupKeys[i]] < groupFirstIndex[groupKeys[j]]
+	})
+	nextOrder := 1
+	for _, key := range groupKeys {
+		if groupOrders[key] > 0 {
+			continue
+		}
+		for {
+			if _, ok := usedOrders[nextOrder]; !ok {
+				break
+			}
+			nextOrder++
+		}
+		groupOrders[key] = nextOrder
+		usedOrders[nextOrder] = struct{}{}
+		nextOrder++
+	}
+	for i := range slots {
+		groupKey := fmt.Sprintf("%s|%s|%s", strings.TrimSpace(slots[i].StartLocalTime), strings.TrimSpace(slots[i].EndLocalTime), strings.TrimSpace(slots[i].Timezone))
+		slots[i].SortOrder = groupOrders[groupKey]
 	}
 
 	if err := s.repo.ReplaceAvailability(ctx, userID, slots); err != nil {
 		return nil, &Error{Status: 500, Key: "errors.failed_save_availability", Err: err}
 	}
+	sort.SliceStable(slots, func(i, j int) bool {
+		if slots[i].SortOrder == slots[j].SortOrder {
+			if slots[i].Weekday == slots[j].Weekday {
+				return slots[i].StartLocalTime < slots[j].StartLocalTime
+			}
+			return slots[i].Weekday < slots[j].Weekday
+		}
+		return slots[i].SortOrder < slots[j].SortOrder
+	})
 
 	return slots, nil
 }

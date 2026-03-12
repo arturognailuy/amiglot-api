@@ -47,10 +47,10 @@ func (r *ProfileRepository) LoadProfile(ctx context.Context, userID string) (mod
 
 func (r *ProfileRepository) LoadLanguages(ctx context.Context, userID string) ([]model.Language, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT language_code, level, is_native, is_target, description
+		SELECT language_code, level, is_native, is_target, description, sort_order
 		FROM user_languages
 		WHERE user_id = $1
-		ORDER BY language_code
+		ORDER BY sort_order, language_code
 	`, userID)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (r *ProfileRepository) LoadLanguages(ctx context.Context, userID string) ([
 	languages := []model.Language{}
 	for rows.Next() {
 		var lang model.Language
-		if err := rows.Scan(&lang.LanguageCode, &lang.Level, &lang.IsNative, &lang.IsTarget, &lang.Description); err != nil {
+		if err := rows.Scan(&lang.LanguageCode, &lang.Level, &lang.IsNative, &lang.IsTarget, &lang.Description, &lang.SortOrder); err != nil {
 			return nil, err
 		}
 		languages = append(languages, lang)
@@ -73,10 +73,11 @@ func (r *ProfileRepository) LoadAvailability(ctx context.Context, userID string)
 		SELECT weekday,
 		  to_char(start_local_time, 'HH24:MI') as start_local_time,
 		  to_char(end_local_time, 'HH24:MI') as end_local_time,
-		  timezone
+		  timezone,
+		  sort_order
 		FROM availability_slots
 		WHERE user_id = $1
-		ORDER BY weekday, start_local_time
+		ORDER BY sort_order, weekday, start_local_time
 	`, userID)
 	if err != nil {
 		return nil, err
@@ -86,7 +87,7 @@ func (r *ProfileRepository) LoadAvailability(ctx context.Context, userID string)
 	availability := []model.AvailabilitySlot{}
 	for rows.Next() {
 		var slot model.AvailabilitySlot
-		if err := rows.Scan(&slot.Weekday, &slot.StartLocalTime, &slot.EndLocalTime, &slot.Timezone); err != nil {
+		if err := rows.Scan(&slot.Weekday, &slot.StartLocalTime, &slot.EndLocalTime, &slot.Timezone, &slot.SortOrder); err != nil {
 			return nil, err
 		}
 		availability = append(availability, slot)
@@ -137,9 +138,9 @@ func (r *ProfileRepository) ReplaceLanguages(ctx context.Context, userID string,
 
 	for _, lang := range languages {
 		_, err := tx.Exec(ctx, `
-			INSERT INTO user_languages (user_id, language_code, level, is_native, is_target, description)
-			VALUES ($1, $2, $3, $4, $5, $6)
-		`, userID, lang.LanguageCode, lang.Level, lang.IsNative, lang.IsTarget, lang.Description)
+			INSERT INTO user_languages (user_id, language_code, level, is_native, is_target, description, sort_order)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
+		`, userID, lang.LanguageCode, lang.Level, lang.IsNative, lang.IsTarget, lang.Description, lang.SortOrder)
 		if err != nil {
 			return err
 		}
@@ -163,9 +164,9 @@ func (r *ProfileRepository) ReplaceAvailability(ctx context.Context, userID stri
 
 	for _, slot := range slots {
 		_, err := tx.Exec(ctx, `
-			INSERT INTO availability_slots (user_id, weekday, start_local_time, end_local_time, timezone)
-			VALUES ($1, $2, $3::time, $4::time, $5)
-		`, userID, slot.Weekday, slot.StartLocalTime, slot.EndLocalTime, slot.Timezone)
+			INSERT INTO availability_slots (user_id, weekday, start_local_time, end_local_time, timezone, sort_order)
+			VALUES ($1, $2, $3::time, $4::time, $5, $6)
+		`, userID, slot.Weekday, slot.StartLocalTime, slot.EndLocalTime, slot.Timezone, slot.SortOrder)
 		if err != nil {
 			return err
 		}

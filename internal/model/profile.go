@@ -20,6 +20,7 @@ type Language struct {
 	IsNative     bool
 	IsTarget     bool
 	Description  *string
+	SortOrder    int
 }
 
 type AvailabilitySlot struct {
@@ -27,4 +28,5 @@ type AvailabilitySlot struct {
 	StartLocalTime string
 	EndLocalTime   string
 	Timezone       string
+	SortOrder      int
 }
