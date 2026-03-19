@@ -15,7 +15,7 @@ const (
 
 // DiscoveryService handles match discovery business logic.
 type DiscoveryService struct {
-	repo             *repository.DiscoveryRepository
+	repo              *repository.DiscoveryRepository
 	minOverlapMinutes int
 }
 
@@ -118,9 +118,9 @@ func (s *DiscoveryService) Discover(ctx context.Context, userID string, cursor *
 		return nil, &Error{Status: 500, Key: "errors.failed_load_languages", Err: err}
 	}
 
-	myTeach := make(map[string]repository.LanguageRow)     // I can teach (level >= 4)
-	myTarget := make(map[string]repository.LanguageRow)     // I want to learn (is_target)
-	myBridge := make(map[string]repository.LanguageRow)     // I can bridge (level >= 3)
+	myTeach := make(map[string]repository.LanguageRow)  // I can teach (level >= 4)
+	myTarget := make(map[string]repository.LanguageRow) // I want to learn (is_target)
+	myBridge := make(map[string]repository.LanguageRow) // I can bridge (level >= 3)
 	for _, l := range myLangs {
 		if l.Level >= 4 {
 			myTeach[l.LanguageCode] = l
