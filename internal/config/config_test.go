@@ -46,3 +46,21 @@ func TestLoadIgnoresInvalidTTL(t *testing.T) {
 
 	require.Equal(t, 15*time.Minute, cfg.MagicLinkTTL)
 }
+
+func TestLoadMatchMinOverlapMinutes(t *testing.T) {
+	t.Setenv("MATCH_MIN_OVERLAP_MINUTES", "90")
+	cfg := Load()
+	require.Equal(t, 90, cfg.MatchMinOverlapMinutes)
+}
+
+func TestLoadMatchMinOverlapMinutesDefault(t *testing.T) {
+	t.Setenv("MATCH_MIN_OVERLAP_MINUTES", "")
+	cfg := Load()
+	require.Equal(t, 60, cfg.MatchMinOverlapMinutes)
+}
+
+func TestLoadMatchMinOverlapMinutesInvalid(t *testing.T) {
+	t.Setenv("MATCH_MIN_OVERLAP_MINUTES", "abc")
+	cfg := Load()
+	require.Equal(t, 60, cfg.MatchMinOverlapMinutes)
+}
