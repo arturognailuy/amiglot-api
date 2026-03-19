@@ -49,6 +49,12 @@ type User struct {
 	LastLoginAt pgtype.Timestamptz
 }
 
+type UserBlock struct {
+	BlockerID pgtype.UUID
+	BlockedID pgtype.UUID
+	CreatedAt pgtype.Timestamptz
+}
+
 type UserLanguage struct {
 	ID           pgtype.UUID
 	UserID       pgtype.UUID

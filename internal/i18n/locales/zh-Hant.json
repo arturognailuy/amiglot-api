@@ -50,5 +50,8 @@
   "errors.failed_consume_token": "消耗令牌失敗",
   "errors.failed_update_login": "更新登入時間失敗",
   "errors.failed_commit_token": "提交令牌失敗",
-  "errors.failed_generate_access_token": "生成存取令牌失敗"
+  "errors.failed_generate_access_token": "生成存取令牌失敗",
+  "errors.profile_incomplete": "請先完善個人資料再搜尋夥伴。",
+  "errors.no_target_languages": "請至少添加一種想要學習的語言。",
+  "errors.internal_server_error": "伺服器內部錯誤，請重試。"
 }

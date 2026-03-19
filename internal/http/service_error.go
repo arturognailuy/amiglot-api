@@ -20,8 +20,12 @@ func toHumaError(ctx context.Context, err error) error {
 			return huma.Error400BadRequest(i18n.T(ctx, svcErr.Key))
 		case 401:
 			return huma.Error401Unauthorized(i18n.T(ctx, svcErr.Key))
+		case 403:
+			return huma.Error403Forbidden(i18n.T(ctx, svcErr.Key))
 		case 409:
 			return huma.Error409Conflict(i18n.T(ctx, svcErr.Key))
+		case 422:
+			return huma.Error422UnprocessableEntity(i18n.T(ctx, svcErr.Key))
 		case 503:
 			return huma.Error503ServiceUnavailable(i18n.T(ctx, svcErr.Key))
 		default:

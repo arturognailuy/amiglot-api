@@ -50,5 +50,8 @@
   "errors.failed_consume_token": "消费令牌失败",
   "errors.failed_update_login": "更新登录时间失败",
   "errors.failed_commit_token": "提交令牌失败",
-  "errors.failed_generate_access_token": "生成访问令牌失败"
+  "errors.failed_generate_access_token": "生成访问令牌失败",
+  "errors.profile_incomplete": "请先完善个人资料再搜索伙伴。",
+  "errors.no_target_languages": "请至少添加一种想要学习的语言。",
+  "errors.internal_server_error": "服务器内部错误，请重试。"
 }
