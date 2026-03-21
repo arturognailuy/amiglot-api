@@ -30,7 +30,7 @@ type languagePayload struct {
 	IsNative     bool    `json:"is_native"`
 	IsTarget     bool    `json:"is_target"`
 	Description  *string `json:"description,omitempty"`
-	Order        int     `json:"order,omitempty"`
+	Order        *int    `json:"order,omitempty"`
 }
 
 type availabilityPayload struct {
@@ -38,7 +38,7 @@ type availabilityPayload struct {
 	StartLocalTime string `json:"start_local_time"`
 	EndLocalTime   string `json:"end_local_time"`
 	Timezone       string `json:"timezone"`
-	Order          int    `json:"order,omitempty"`
+	Order          *int   `json:"order,omitempty"`
 }
 
 type userPayload struct {
@@ -239,7 +239,7 @@ func toLanguagePayloads(languages []model.Language) []languagePayload {
 			IsNative:     lang.IsNative,
 			IsTarget:     lang.IsTarget,
 			Description:  lang.Description,
-			Order:        lang.SortOrder,
+			Order:        intPtr(lang.SortOrder),
 		})
 	}
 	return payloads
@@ -256,7 +256,7 @@ func toAvailabilityPayloads(slots []model.AvailabilitySlot) []availabilityPayloa
 			StartLocalTime: slot.StartLocalTime,
 			EndLocalTime:   slot.EndLocalTime,
 			Timezone:       slot.Timezone,
-			Order:          slot.SortOrder,
+			Order:          intPtr(slot.SortOrder),
 		})
 	}
 	return payloads
@@ -274,7 +274,7 @@ func toModelLanguages(languages []languagePayload) []model.Language {
 			IsNative:     lang.IsNative,
 			IsTarget:     lang.IsTarget,
 			Description:  lang.Description,
-			SortOrder:    lang.Order,
+			SortOrder:    derefInt(lang.Order),
 		})
 	}
 	return models
@@ -291,8 +291,16 @@ func toModelAvailability(slots []availabilityPayload) []model.AvailabilitySlot {
 			StartLocalTime: slot.StartLocalTime,
 			EndLocalTime:   slot.EndLocalTime,
 			Timezone:       slot.Timezone,
-			SortOrder:      slot.Order,
+			SortOrder:      derefInt(slot.Order),
 		})
 	}
 	return models
+}
+
+func intPtr(v int) *int { return &v }
+func derefInt(p *int) int {
+	if p != nil {
+		return *p
+	}
+	return 0
 }
