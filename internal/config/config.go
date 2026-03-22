@@ -8,11 +8,12 @@ import (
 
 // Config holds runtime configuration.
 type Config struct {
-	Port             string
-	DatabaseURL      string
-	Env              string
-	MagicLinkBaseURL string
-	MagicLinkTTL     time.Duration
+	Port                   string
+	DatabaseURL            string
+	Env                    string
+	MagicLinkBaseURL       string
+	MagicLinkTTL           time.Duration
+	MatchMinOverlapMinutes int
 }
 
 // Load reads configuration from environment variables.
@@ -39,11 +40,21 @@ func Load() Config {
 		}
 	}
 
+	magicLinkTTL := time.Duration(ttlMinutes) * time.Minute
+
+	minOverlap := 60
+	if raw := os.Getenv("MATCH_MIN_OVERLAP_MINUTES"); raw != "" {
+		if value, err := strconv.Atoi(raw); err == nil && value > 0 {
+			minOverlap = value
+		}
+	}
+
 	return Config{
-		Port:             port,
-		DatabaseURL:      os.Getenv("DATABASE_URL"),
-		Env:              env,
-		MagicLinkBaseURL: magicLinkBaseURL,
-		MagicLinkTTL:     time.Duration(ttlMinutes) * time.Minute,
+		Port:                   port,
+		DatabaseURL:            os.Getenv("DATABASE_URL"),
+		Env:                    env,
+		MagicLinkBaseURL:       magicLinkBaseURL,
+		MagicLinkTTL:           magicLinkTTL,
+		MatchMinOverlapMinutes: minOverlap,
 	}
 }

@@ -91,6 +91,7 @@ func resetTables(t *testing.T, pool *pgxpool.Pool) {
 
 	_, err := pool.Exec(context.Background(), `
     TRUNCATE TABLE
+      user_blocks,
       magic_link_tokens,
       availability_slots,
       user_languages,

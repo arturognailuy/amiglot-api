@@ -50,5 +50,8 @@
   "errors.failed_consume_token": "falha ao consumir token",
   "errors.failed_update_login": "falha ao atualizar login",
   "errors.failed_commit_token": "falha ao confirmar token",
-  "errors.failed_generate_access_token": "falha ao gerar token de acesso"
+  "errors.failed_generate_access_token": "falha ao gerar token de acesso",
+  "errors.profile_incomplete": "Por favor, complete seu perfil antes de buscar parceiros.",
+  "errors.no_target_languages": "Por favor, adicione pelo menos um idioma que deseja aprender.",
+  "errors.internal_server_error": "Ocorreu um erro interno. Por favor, tente novamente."
 }

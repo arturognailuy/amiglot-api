@@ -50,5 +50,8 @@
   "errors.failed_consume_token": "failed to consume token",
   "errors.failed_update_login": "failed to update login time",
   "errors.failed_commit_token": "failed to commit token",
-  "errors.failed_generate_access_token": "failed to generate access token"
+  "errors.failed_generate_access_token": "failed to generate access token",
+  "errors.profile_incomplete": "Please complete your profile before searching for partners.",
+  "errors.no_target_languages": "Please add at least one language you want to learn.",
+  "errors.internal_server_error": "An internal error occurred. Please try again."
 }
