@@ -14,6 +14,16 @@ End-to-end coverage for the current API feature set: health, authentication, pro
 - Base URL: `https://test.gnailuy.com/api/v1`
 - Localization via `Accept-Language` (run localization assertions in **English**, **Chinese**, and **Portuguese**)
 
+## 2.1 Seed Data
+
+For discovery & matching tests (M1, M5, M9, M10, etc.), use the seed script to prefill test profiles:
+
+```bash
+psql -f db/seeds/seed_test_profiles.sql
+```
+
+This script is idempotent (cleans previous seed data first) and creates 12 users covering: basic mutual match, multi-language, bridge-only, no availability overlap, minimal overlap, base-language matching (zh vs zh-Hans), blocked pairs, non-discoverable users, and rare-language targets. See comments at the end of the script for the expected match matrix.
+
 ## 3. Health
 1. `GET /healthz` returns `{ ok: true }` and build metadata.
 
