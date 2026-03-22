@@ -220,17 +220,18 @@ COMMIT;
 -- ============================================================
 -- Expected match scenarios (for E2E validation):
 --
--- Alice → sees Bob (en↔zh, overlap), Grace (en↔zh-Hans base-match, overlap),
+-- Alice → sees Luna (20h), Bob (8h), Grace (8h);
 --         does NOT see Eve (no overlap), Julia (not discoverable)
--- Bob → sees Alice, Frank (minimal overlap ~65min), Kevin,
+-- Bob → sees Grace (20h), Kevin (16h), Alice (8h), Luna (8h), Frank (1h);
 --        does NOT see Ivan (blocked), Julia (not discoverable)
--- Carlos → sees Diana (pt-BR↔en, bridge en≥3 both sides),
---          sees Kevin (targets pt, bridge en)
--- Diana → sees Carlos (en↔pt-BR), Luna (en↔pt-BR)
--- Frank → sees Bob (minimal overlap, en↔zh)
--- Grace → sees Alice (zh-Hans↔en, base-language match)
+-- Carlos → sees Kevin (10h, targets pt, bridge en);
+--          does NOT see Diana (no time overlap)
+-- Diana → sees nobody (18:00-22:00 UTC has zero overlap with Carlos/Luna at 22:00-02:00 UTC)
+-- Eve → sees Ivan (8h)
+-- Frank → sees Bob (1h), Grace (1h), Luna (1h)
+-- Grace → sees Bob (20h), Kevin (16h), Alice (8h), Luna (8h), Frank (1h)
 -- Hiro → sees nobody (no Korean teachers)
--- Kevin → sees Bob (en↔zh), Grace (en↔zh-Hans), Carlos (en↔pt-BR),
---         Luna (en↔pt-BR + zh-Hans)
--- Luna → sees Kevin (pt-BR + zh-Hans ↔ en), Diana (pt-BR↔en)
+-- Ivan → sees Eve (8h); does NOT see Bob (blocked)
+-- Kevin → sees Bob (16h), Grace (16h), Carlos (10h), Luna (10h)
+-- Luna → sees Alice (20h), Kevin (10h), Bob (8h), Grace (8h), Frank (1h)
 -- ============================================================
