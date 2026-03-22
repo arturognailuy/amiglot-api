@@ -126,13 +126,12 @@ candidate_slots AS (
 overlap AS (
     SELECT
         cs.candidate_id,
-        ms.weekday,
         GREATEST(0,
             LEAST(ms.end_utc_min, cs.end_utc_min) -
             GREATEST(ms.start_utc_min, cs.start_utc_min)
         ) AS overlap_min
     FROM me_slots ms
-    JOIN candidate_slots cs ON ms.weekday = cs.weekday
+    CROSS JOIN candidate_slots cs
     WHERE LEAST(ms.end_utc_min, cs.end_utc_min) > GREATEST(ms.start_utc_min, cs.start_utc_min)
 ),
 overlap_totals AS (
@@ -186,7 +185,7 @@ candidate_slots AS (
     WHERE a.user_id = $2
 )
 SELECT
-    ms.weekday::smallint AS weekday,
+    (EXTRACT(DOW FROM TIMESTAMP 'epoch' + GREATEST(ms.start_utc_min, cs.start_utc_min) * INTERVAL '1 minute'))::smallint AS weekday,
     TO_CHAR(
         INTERVAL '1 minute' * (GREATEST(ms.start_utc_min, cs.start_utc_min) % (24 * 60)),
         'HH24:MI'
@@ -200,9 +199,9 @@ SELECT
         GREATEST(ms.start_utc_min, cs.start_utc_min)
     )::int AS overlap_minutes
 FROM me_slots ms
-JOIN candidate_slots cs ON ms.weekday = cs.weekday
+CROSS JOIN candidate_slots cs
 WHERE LEAST(ms.end_utc_min, cs.end_utc_min) > GREATEST(ms.start_utc_min, cs.start_utc_min)
-ORDER BY ms.weekday, start_utc
+ORDER BY weekday, start_utc
 `
 
 // DiscoverMatches executes the main matching query.
