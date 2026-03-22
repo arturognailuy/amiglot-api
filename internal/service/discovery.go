@@ -54,6 +54,7 @@ type MatchLanguage struct {
 	LanguageCode string
 	Level        int16
 	IsNative     bool
+	LearnerLevel int16
 }
 
 // BridgeLanguage represents a shared bridge language.
@@ -167,11 +168,20 @@ func (s *DiscoveryService) Discover(ctx context.Context, userID string, cursor *
 
 		// Compute mutual_teach (candidate teaches what I want to learn — base language match)
 		for _, cl := range candLangs {
-			if _, ok := myTarget[baseLang(cl.LanguageCode)]; ok && cl.Level >= 4 {
+			base := baseLang(cl.LanguageCode)
+			if rows, ok := myTarget[base]; ok && cl.Level >= 4 {
+				// Find the best (highest-level) learner entry from my target languages
+				var bestLearnerLevel int16
+				for _, r := range rows {
+					if r.Level > bestLearnerLevel {
+						bestLearnerLevel = r.Level
+					}
+				}
 				item.MutualTeach = append(item.MutualTeach, MatchLanguage{
 					LanguageCode: cl.LanguageCode,
 					Level:        cl.Level,
 					IsNative:     cl.IsNative,
+					LearnerLevel: bestLearnerLevel,
 				})
 			}
 		}
@@ -192,6 +202,7 @@ func (s *DiscoveryService) Discover(ctx context.Context, userID string, cursor *
 						LanguageCode: best.LanguageCode,
 						Level:        best.Level,
 						IsNative:     best.IsNative,
+						LearnerLevel: cl.Level,
 					})
 				}
 			}

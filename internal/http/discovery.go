@@ -25,6 +25,7 @@ type matchLanguagePayload struct {
 	LanguageCode string `json:"language_code"`
 	Level        int16  `json:"level"`
 	IsNative     bool   `json:"is_native"`
+	LearnerLevel int16  `json:"learner_level"`
 }
 
 type bridgeLanguagePayload struct {
@@ -119,6 +120,7 @@ func toMatchLanguagePayloads(langs []service.MatchLanguage) []matchLanguagePaylo
 			LanguageCode: l.LanguageCode,
 			Level:        l.Level,
 			IsNative:     l.IsNative,
+			LearnerLevel: l.LearnerLevel,
 		})
 	}
 	return payloads
