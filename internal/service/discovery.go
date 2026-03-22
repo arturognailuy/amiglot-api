@@ -2,10 +2,19 @@ package service
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/gnailuy/amiglot-api/internal/repository"
 )
+
+// baseLang returns the base language from a BCP-47 code (e.g. "zh-Hans" → "zh").
+func baseLang(code string) string {
+	if i := strings.IndexByte(code, '-'); i >= 0 {
+		return code[:i]
+	}
+	return code
+}
 
 const (
 	defaultMinOverlapMinutes = 60
@@ -118,18 +127,19 @@ func (s *DiscoveryService) Discover(ctx context.Context, userID string, cursor *
 		return nil, &Error{Status: 500, Key: "errors.failed_load_languages", Err: err}
 	}
 
-	myTeach := make(map[string]repository.LanguageRow)  // I can teach (level >= 4)
-	myTarget := make(map[string]repository.LanguageRow) // I want to learn (is_target)
-	myBridge := make(map[string]repository.LanguageRow) // I can bridge (level >= 3)
+	myTeach := make(map[string][]repository.LanguageRow)  // I can teach (level >= 4), keyed by base lang
+	myTarget := make(map[string][]repository.LanguageRow) // I want to learn (is_target), keyed by base lang
+	myBridge := make(map[string][]repository.LanguageRow) // I can bridge (level >= 3), keyed by base lang
 	for _, l := range myLangs {
+		base := baseLang(l.LanguageCode)
 		if l.Level >= 4 {
-			myTeach[l.LanguageCode] = l
+			myTeach[base] = append(myTeach[base], l)
 		}
 		if l.IsTarget {
-			myTarget[l.LanguageCode] = l
+			myTarget[base] = append(myTarget[base], l)
 		}
 		if l.Level >= 3 {
-			myBridge[l.LanguageCode] = l
+			myBridge[base] = append(myBridge[base], l)
 		}
 	}
 
@@ -155,9 +165,9 @@ func (s *DiscoveryService) Discover(ctx context.Context, userID string, cursor *
 			TotalOverlapMinutes: m.TotalOverlapMinutes,
 		}
 
-		// Compute mutual_teach (candidate teaches what I want to learn)
+		// Compute mutual_teach (candidate teaches what I want to learn — base language match)
 		for _, cl := range candLangs {
-			if _, ok := myTarget[cl.LanguageCode]; ok && cl.Level >= 4 {
+			if _, ok := myTarget[baseLang(cl.LanguageCode)]; ok && cl.Level >= 4 {
 				item.MutualTeach = append(item.MutualTeach, MatchLanguage{
 					LanguageCode: cl.LanguageCode,
 					Level:        cl.Level,
@@ -166,23 +176,31 @@ func (s *DiscoveryService) Discover(ctx context.Context, userID string, cursor *
 			}
 		}
 
-		// Compute mutual_learn (I teach what candidate wants to learn)
+		// Compute mutual_learn (I teach what candidate wants to learn — base language match)
 		for _, cl := range candLangs {
 			if cl.IsTarget {
-				if ml, ok := myTeach[cl.LanguageCode]; ok {
+				base := baseLang(cl.LanguageCode)
+				if mls, ok := myTeach[base]; ok {
+					// Use the highest-level entry from my teach languages
+					best := mls[0]
+					for _, ml := range mls[1:] {
+						if ml.Level > best.Level {
+							best = ml
+						}
+					}
 					item.MutualLearn = append(item.MutualLearn, MatchLanguage{
-						LanguageCode: ml.LanguageCode,
-						Level:        ml.Level,
-						IsNative:     ml.IsNative,
+						LanguageCode: best.LanguageCode,
+						Level:        best.Level,
+						IsNative:     best.IsNative,
 					})
 				}
 			}
 		}
 
-		// Compute bridge languages
+		// Compute bridge languages (base language match)
 		for _, cl := range candLangs {
 			if cl.Level >= 3 {
-				if _, ok := myBridge[cl.LanguageCode]; ok {
+				if _, ok := myBridge[baseLang(cl.LanguageCode)]; ok {
 					item.BridgeLanguages = append(item.BridgeLanguages, BridgeLanguage{
 						LanguageCode: cl.LanguageCode,
 						Level:        cl.Level,

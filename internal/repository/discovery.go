@@ -91,18 +91,18 @@ candidates AS (
       AND EXISTS (
           SELECT 1 FROM user_languages ul
           WHERE ul.user_id = p.user_id
-            AND ul.language_code IN (SELECT mt.language_code FROM me_target mt)
+            AND SPLIT_PART(ul.language_code, '-', 1) IN (SELECT SPLIT_PART(mt.language_code, '-', 1) FROM me_target mt)
             AND ul.level >= 4
       )
       AND EXISTS (
           SELECT 1 FROM user_languages ul
           WHERE ul.user_id = p.user_id
             AND ul.is_target = true
-            AND ul.language_code IN (SELECT mt.language_code FROM me_teach mt)
+            AND SPLIT_PART(ul.language_code, '-', 1) IN (SELECT SPLIT_PART(mt.language_code, '-', 1) FROM me_teach mt)
       )
       AND EXISTS (
           SELECT 1 FROM user_languages ul
-          JOIN me_bridge mb ON ul.language_code = mb.language_code
+          JOIN me_bridge mb ON SPLIT_PART(ul.language_code, '-', 1) = SPLIT_PART(mb.language_code, '-', 1)
           WHERE ul.user_id = p.user_id
             AND ul.level >= 3
       )
