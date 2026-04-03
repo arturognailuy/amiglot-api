@@ -144,7 +144,9 @@ func TestConnectionEndpoint_AcceptFlow(t *testing.T) {
 	var created struct {
 		ID string `json:"id"`
 	}
-	json.NewDecoder(rec.Body).Decode(&created)
+	if err := json.NewDecoder(rec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 
 	// Accept
 	acceptReq := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/v1/match-requests/%s/accept", created.ID), nil)
@@ -160,7 +162,9 @@ func TestConnectionEndpoint_AcceptFlow(t *testing.T) {
 		Ok      bool   `json:"ok"`
 		MatchID string `json:"match_id"`
 	}
-	json.NewDecoder(acceptRec.Body).Decode(&acceptResult)
+	if err := json.NewDecoder(acceptRec.Body).Decode(&acceptResult); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 	if !acceptResult.Ok || acceptResult.MatchID == "" {
 		t.Errorf("expected ok with match_id, got %+v", acceptResult)
 	}
@@ -184,7 +188,9 @@ func TestConnectionEndpoint_DeclineFlow(t *testing.T) {
 	var created struct {
 		ID string `json:"id"`
 	}
-	json.NewDecoder(rec.Body).Decode(&created)
+	if err := json.NewDecoder(rec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 
 	// Decline
 	decReq := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/v1/match-requests/%s/decline", created.ID), nil)
@@ -215,7 +221,9 @@ func TestConnectionEndpoint_CancelFlow(t *testing.T) {
 	var created struct {
 		ID string `json:"id"`
 	}
-	json.NewDecoder(rec.Body).Decode(&created)
+	if err := json.NewDecoder(rec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 
 	// Cancel
 	canReq := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/v1/match-requests/%s/cancel", created.ID), nil)
@@ -247,7 +255,9 @@ func TestConnectionEndpoint_Messages(t *testing.T) {
 	var created struct {
 		ID string `json:"id"`
 	}
-	json.NewDecoder(rec.Body).Decode(&created)
+	if err := json.NewDecoder(rec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 
 	// Send message
 	msgBody := `{"body":"Hello from test!"}`
@@ -274,7 +284,9 @@ func TestConnectionEndpoint_Messages(t *testing.T) {
 	var msgList struct {
 		Items []json.RawMessage `json:"items"`
 	}
-	json.NewDecoder(listRec.Body).Decode(&msgList)
+	if err := json.NewDecoder(listRec.Body).Decode(&msgList); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 	if len(msgList.Items) != 1 {
 		t.Errorf("expected 1 message, got %d", len(msgList.Items))
 	}
@@ -310,7 +322,9 @@ func TestConnectionEndpoint_GetRequest(t *testing.T) {
 	var created struct {
 		ID string `json:"id"`
 	}
-	json.NewDecoder(rec.Body).Decode(&created)
+	if err := json.NewDecoder(rec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 
 	// Get single request
 	getReq := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/match-requests/%s", created.ID), nil)
