@@ -22,8 +22,8 @@ func createConnUser(t *testing.T, pool *pgxpool.Pool, email, handle string) stri
 		t.Fatalf("create user: %v", err)
 	}
 	_, err = pool.Exec(context.Background(),
-		`INSERT INTO profiles (user_id, handle, handle_norm, timezone, discoverable)
-		 VALUES ($1, $2, $2, 'UTC', true)`, id, handle)
+		`INSERT INTO profiles (user_id, handle, handle_norm, timezone, discoverable, birth_year, birth_month, country_code)
+		 VALUES ($1, $2, $2, 'UTC', true, 2000, 6, 'US')`, id, handle)
 	if err != nil {
 		t.Fatalf("create profile: %v", err)
 	}

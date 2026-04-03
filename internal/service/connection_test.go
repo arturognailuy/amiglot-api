@@ -276,8 +276,8 @@ func createConnTestUser(t *testing.T, ctx context.Context, pool *pgxpool.Pool, e
 	if err := pool.QueryRow(ctx, `INSERT INTO users (email) VALUES ($1) RETURNING id`, email).Scan(&userID); err != nil {
 		t.Fatalf("create user %s: %v", email, err)
 	}
-	if _, err := pool.Exec(ctx, `INSERT INTO profiles (user_id, handle, handle_norm, timezone, discoverable)
-		VALUES ($1, $2, $2, 'UTC', true)`, userID, handle); err != nil {
+	if _, err := pool.Exec(ctx, `INSERT INTO profiles (user_id, handle, handle_norm, timezone, discoverable, birth_year, birth_month)
+		VALUES ($1, $2, $2, 'UTC', true, 2000, 6)`, userID, handle); err != nil {
 		t.Fatalf("create profile %s: %v", handle, err)
 	}
 	return userID
@@ -294,5 +294,47 @@ func assertServiceError(t *testing.T, err error, status int, key string) {
 	}
 	if svcErr.Status != status || svcErr.Key != key {
 		t.Errorf("expected %d/%s, got %d/%s", status, key, svcErr.Status, svcErr.Key)
+	}
+}
+
+func TestAgeFromBirthYear(t *testing.T) {
+	// nil year
+	if age := ageFromBirthYear(nil, nil); age != nil {
+		t.Errorf("expected nil, got %d", *age)
+	}
+
+	// year only
+	year := 2000
+	age := ageFromBirthYear(&year, nil)
+	if age == nil || *age < 25 {
+		t.Errorf("expected age >= 25, got %v", age)
+	}
+
+	// year + month (past month)
+	m := int16(1) // January
+	age = ageFromBirthYear(&year, &m)
+	if age == nil || *age < 25 {
+		t.Errorf("expected age >= 25 with month, got %v", age)
+	}
+
+	// year + month (future month)
+	m2 := int16(12) // December
+	age = ageFromBirthYear(&year, &m2)
+	if age == nil {
+		t.Error("expected non-nil age")
+	}
+}
+
+func TestNewConnectionService_Defaults(t *testing.T) {
+	pool := openTestPool(t)
+	repo := repository.NewConnectionRepository(pool)
+
+	// Zero values should use defaults
+	svc := NewConnectionService(repo, 0, 0)
+	if svc.msgLimit != defaultPreMatchMessageLimit {
+		t.Errorf("expected default msg limit %d, got %d", defaultPreMatchMessageLimit, svc.msgLimit)
+	}
+	if svc.msgMaxLen != defaultMatchRequestMessageMaxLen {
+		t.Errorf("expected default msg max len %d, got %d", defaultMatchRequestMessageMaxLen, svc.msgMaxLen)
 	}
 }
