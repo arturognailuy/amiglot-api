@@ -182,7 +182,7 @@ func (r *ConnectionRepository) AcceptMatchRequest(ctx context.Context, requestID
 	if err != nil {
 		return "", err
 	}
-	defer tx.Rollback(ctx)
+	defer tx.Rollback(ctx) //nolint:errcheck // rollback after commit is a no-op
 
 	// Step 1: Lock and update the request
 	var requesterID, recID string
