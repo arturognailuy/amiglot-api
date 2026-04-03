@@ -24,6 +24,97 @@ psql -f db/seeds/seed_test_profiles.sql
 
 This script is idempotent (cleans previous seed data first) and creates 12 users covering: basic mutual match, multi-language, bridge-only, no availability overlap, minimal overlap, base-language matching (zh vs zh-Hans), blocked pairs, non-discoverable users, and rare-language targets. See comments at the end of the script for the expected match matrix.
 
+## 2.2 Seed Users by Test Group
+
+Each test group below lists the seed users it requires. When setting up a new test environment, create all seed users via the seed script, then log in as the specified user to run each group.
+
+### Group A: Fresh-Account Tests (no seed users)
+
+| Tests | Description |
+|-------|-------------|
+| §3 Health, §4 Auth, §5 Profile & Handle, §6 Languages, §7 Availability, §8 Discoverable Flag | Each test creates a fresh account (`test+<timestamp>@gnailuy.com`). No seed data needed. |
+
+### Group B: Basic Discovery & Matching
+
+| Tests | Login As | Seed Users Needed | Purpose |
+|-------|----------|-------------------|---------|
+| M1 (happy path) | Alice (`test+seed1`) | Alice + Bob | Mutual English↔Chinese match, overlapping availability |
+| M5 (base-language zh↔zh-Hans) | Alice (`test+seed1`) | Alice + Grace | Alice targets `zh`, Grace speaks `zh-Hans` native |
+| M9 (pagination) | Alice (`test+seed1`) | Alice + Bob + Grace + Luna (+ others) | Multiple matches to verify cursor pagination |
+| M10 (multiple mutual languages) | Kevin (`test+seed11`) | Kevin + Luna | Kevin targets `zh` + `pt`; Luna speaks both |
+
+### Group C: Discovery Edge Cases & Errors
+
+| Tests | Login As | Seed Users Needed | Purpose |
+|-------|----------|-------------------|---------|
+| M2 (no target languages, 422) | Fresh account | None (fresh account with only native lang) | Validation error |
+| M3 (incomplete profile, 403) | Fresh account | None (no profile saved) | Auth without profile |
+| M4 (unauthenticated, 401) | None | None | No auth header |
+| M6 (no matches) | Hiro (`test+seed8`) | Hiro | Targets Korean — no teachers available |
+| M7 (insufficient overlap) | Alice (`test+seed1`) | Alice + Eve | Same language match but zero time overlap |
+| M8 (blocked user excluded) | Bob (`test+seed2`) | Bob + Ivan | Bob blocks Ivan; bidirectional exclusion |
+
+### Group D: Discovery Localization
+
+| Tests | Login As | Seed Users Needed | Purpose |
+|-------|----------|-------------------|---------|
+| M11 (localized errors) | Fresh account | None | `Accept-Language: pt-BR` and `zh-Hans` error messages |
+
+### Group E: Connection Handshake — Happy Paths
+
+| Tests | Login As | Seed Users Needed | Purpose |
+|-------|----------|-------------------|---------|
+| C1 (send request) | Alice (`test+seed1`) | Alice + Bob | Both discoverable with overlap |
+| C7 (list incoming) | Bob (`test+seed2`) | Alice + Bob | Bob checks incoming from Alice |
+| C8 (list outgoing) | Alice (`test+seed1`) | Alice + Bob | Alice checks outgoing to Bob |
+| C9 (request detail) | Alice or Bob | Alice + Bob | Both participants view detail |
+| C10 (accept) | Bob (`test+seed2`) | Alice + Bob | Bob accepts Alice's request |
+| C13 (decline) | Bob (`test+seed2`) | Alice + Bob | Bob declines Alice's request |
+| C14 (cancel) | Alice (`test+seed1`) | Alice + Bob | Alice cancels her request |
+| C15 (send pre-accept message) | Bob (`test+seed2`) | Alice + Bob | Messaging on pending request |
+| C16 (list messages) | Alice (`test+seed1`) | Alice + Bob | View conversation |
+| C20 (accept re-associates messages) | Bob (`test+seed2`) | Alice + Bob | Messages migrate to match |
+| C21 (pagination) | Bob (`test+seed2`) | Multiple requesters → Bob | Bob has many incoming requests |
+
+### Group F: Connection Handshake — Error Cases
+
+| Tests | Login As | Seed Users Needed | Purpose |
+|-------|----------|-------------------|---------|
+| C2 (self-request, 400) | Alice (`test+seed1`) | Alice | Send request to self |
+| C3 (not found, 404) | Alice (`test+seed1`) | Alice | Non-existent recipient |
+| C4 (duplicate, 409) | Alice (`test+seed1`) | Alice + Bob | Second pending request |
+| C5 (already matched, 409) | Alice (`test+seed1`) | Alice + Bob (already matched) | Request after match exists |
+| C6 (blocked, 403) | Bob (`test+seed2`) | Bob + Ivan | Bob blocked Ivan |
+| C11 (accept not recipient, 403) | Alice (`test+seed1`) | Alice + Bob | Requester tries to accept |
+| C12 (accept not pending, 409) | Bob (`test+seed2`) | Alice + Bob | Already resolved request |
+| C17 (message limit, 429) | Alice (`test+seed1`) | Alice + Bob | Exhaust `PRE_MATCH_MESSAGE_LIMIT` |
+| C18 (message not pending, 409) | Alice (`test+seed1`) | Alice + Bob | Message on accepted request |
+| C19 (not participant, 403) | Carlos (`test+seed3`) | Alice + Bob + Carlos | Unrelated user messages |
+| C23 (unauthenticated, 401) | None | None | No auth header |
+
+### Group G: Connection Localization
+
+| Tests | Login As | Seed Users Needed | Purpose |
+|-------|----------|-------------------|---------|
+| C22 (localized errors) | Alice (`test+seed1`) | Alice | Self-request with `zh-Hans` and `pt-BR` |
+
+### Seed User Reference
+
+| # | Handle | Email | Native | Targets | Key Trait |
+|---|--------|-------|--------|---------|-----------|
+| 1 | alice | test+seed1@gnailuy.com | en | zh | Primary test requester |
+| 2 | bob | test+seed2@gnailuy.com | zh | en | Primary test recipient; blocks Ivan |
+| 3 | carlos | test+seed3@gnailuy.com | pt-BR, es | en, zh | Multi-lang; bridge match test |
+| 4 | diana | test+seed4@gnailuy.com | en | pt | No time overlap with others |
+| 5 | eve | test+seed5@gnailuy.com | zh | en | No availability overlap with Alice |
+| 6 | frank | test+seed6@gnailuy.com | en | zh | Minimal overlap (65 min) with Bob |
+| 7 | grace | test+seed7@gnailuy.com | zh-Hans | en | Base-language matching test |
+| 8 | hiro | test+seed8@gnailuy.com | ja | ko | Rare language — no matches |
+| 9 | ivan | test+seed9@gnailuy.com | en | zh | Blocked by Bob |
+| 10 | julia | test+seed10@gnailuy.com | zh | en | NOT discoverable |
+| 11 | kevin | test+seed11@gnailuy.com | en | zh, pt | Multi-target language match |
+| 12 | luna | test+seed12@gnailuy.com | pt-BR, zh-Hans (adv) | en | Multi-teach language match |
+
 ## 3. Health
 1. `GET /healthz` returns `{ ok: true }` and build metadata.
 
