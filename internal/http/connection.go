@@ -53,13 +53,13 @@ type requestUserPayload struct {
 }
 
 type matchRequestPayload struct {
-	ID           string             `json:"id"`
-	Requester    requestUserPayload `json:"requester"`
-	Recipient    requestUserPayload `json:"recipient"`
-	Status       string             `json:"status"`
-	MessageCount int                `json:"message_count"`
-	LastMessageAt *string           `json:"last_message_at,omitempty"`
-	CreatedAt    string             `json:"created_at"`
+	ID            string             `json:"id"`
+	Requester     requestUserPayload `json:"requester"`
+	Recipient     requestUserPayload `json:"recipient"`
+	Status        string             `json:"status"`
+	MessageCount  int                `json:"message_count"`
+	LastMessageAt *string            `json:"last_message_at,omitempty"`
+	CreatedAt     string             `json:"created_at"`
 }
 
 type listMatchRequestsResponse struct {

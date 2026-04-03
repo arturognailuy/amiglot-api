@@ -18,9 +18,9 @@ const (
 
 // ConnectionService handles connection (handshake) business logic.
 type ConnectionService struct {
-	repo       *repository.ConnectionRepository
-	msgLimit   int
-	msgMaxLen  int
+	repo      *repository.ConnectionRepository
+	msgLimit  int
+	msgMaxLen int
 }
 
 // NewConnectionService creates a new ConnectionService.
@@ -109,19 +109,19 @@ func (s *ConnectionService) CreateMatchRequest(ctx context.Context, requesterID,
 
 // MatchRequestListItem represents a match request in a list.
 type MatchRequestListItem struct {
-	ID                  string
-	RequesterID         string
-	RecipientID         string
-	RequesterHandle     string
-	RequesterCountry    *string
-	RequesterAge        *int
-	RecipientHandle     string
-	RecipientCountry    *string
-	RecipientAge        *int
-	Status              string
-	MessageCount        int
-	LastMessageAt       *time.Time
-	CreatedAt           time.Time
+	ID               string
+	RequesterID      string
+	RecipientID      string
+	RequesterHandle  string
+	RequesterCountry *string
+	RequesterAge     *int
+	RecipientHandle  string
+	RecipientCountry *string
+	RecipientAge     *int
+	Status           string
+	MessageCount     int
+	LastMessageAt    *time.Time
+	CreatedAt        time.Time
 }
 
 // MatchRequestListResult is the result of listing match requests.

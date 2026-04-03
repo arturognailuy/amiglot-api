@@ -8,14 +8,14 @@ import (
 
 // Config holds runtime configuration.
 type Config struct {
-	Port                       string
-	DatabaseURL                string
-	Env                        string
-	MagicLinkBaseURL           string
-	MagicLinkTTL               time.Duration
-	MatchMinOverlapMinutes     int
-	PreMatchMessageLimit       int
-	MatchRequestMessageMaxLen  int
+	Port                      string
+	DatabaseURL               string
+	Env                       string
+	MagicLinkBaseURL          string
+	MagicLinkTTL              time.Duration
+	MatchMinOverlapMinutes    int
+	PreMatchMessageLimit      int
+	MatchRequestMessageMaxLen int
 }
 
 // Load reads configuration from environment variables.
@@ -66,13 +66,13 @@ func Load() Config {
 	}
 
 	return Config{
-		Port:                       port,
-		DatabaseURL:                os.Getenv("DATABASE_URL"),
-		Env:                        env,
-		MagicLinkBaseURL:           magicLinkBaseURL,
-		MagicLinkTTL:               magicLinkTTL,
-		MatchMinOverlapMinutes:     minOverlap,
-		PreMatchMessageLimit:       preMatchMsgLimit,
-		MatchRequestMessageMaxLen:  matchReqMsgMaxLen,
+		Port:                      port,
+		DatabaseURL:               os.Getenv("DATABASE_URL"),
+		Env:                       env,
+		MagicLinkBaseURL:          magicLinkBaseURL,
+		MagicLinkTTL:              magicLinkTTL,
+		MatchMinOverlapMinutes:    minOverlap,
+		PreMatchMessageLimit:      preMatchMsgLimit,
+		MatchRequestMessageMaxLen: matchReqMsgMaxLen,
 	}
 }
