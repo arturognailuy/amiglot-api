@@ -16,13 +16,21 @@ End-to-end coverage for the current API feature set: health, authentication, pro
 
 ## 2.1 Seed Data
 
-For discovery & matching tests (M1, M5, M9, M10, etc.), use the seed script to prefill test profiles:
+**When setting up any new test environment, seed users must be created before running E2E tests.** Use the seed script to create all 12 test profiles via the API:
 
 ```bash
-psql -f db/seeds/seed_test_profiles.sql
+# Requires: pip install requests
+# API must be running (DB + API container)
+python3 scripts/seed-users.py --api-url http://localhost:6176/api/v1
+
+# For full setup (blocks + discoverable overrides), also pass the DB DSN:
+python3 scripts/seed-users.py --api-url http://localhost:6176/api/v1 \
+  --db-dsn "postgresql://postgres@localhost:5432/amiglot_dev"
 ```
 
-This script is idempotent (cleans previous seed data first) and creates 12 users covering: basic mutual match, multi-language, bridge-only, no availability overlap, minimal overlap, base-language matching (zh vs zh-Hans), blocked pairs, non-discoverable users, and rare-language targets. See comments at the end of the script for the expected match matrix.
+The script creates 12 users covering: basic mutual match, multi-language, bridge-only, no availability overlap, minimal overlap, base-language matching (zh vs zh-Hans), blocked pairs, non-discoverable users, and rare-language targets.
+
+**Note:** Since test containers use ephemeral storage, re-run the seed script each time a test environment is recreated.
 
 ## 2.2 Seed Users by Test Group
 
