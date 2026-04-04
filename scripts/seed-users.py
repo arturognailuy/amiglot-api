@@ -34,7 +34,7 @@ SEED_USERS = [
         "email": "test+seed2@gnailuy.com", "handle": "bob", "tz": "Asia/Shanghai",
         "langs": [
             {"language_code": "zh", "level": 5, "is_native": True, "is_target": False},
-            {"language_code": "en", "level": 2, "is_native": False, "is_target": True},
+            {"language_code": "en", "level": 3, "is_native": False, "is_target": True},
         ],
         "avail": [{"weekday": d, "start_local_time": "16:00", "end_local_time": "23:59", "timezone": "Asia/Shanghai"} for d in range(1, 6)],
     },
@@ -60,7 +60,7 @@ SEED_USERS = [
         "email": "test+seed5@gnailuy.com", "handle": "eve", "tz": "Etc/UTC",
         "langs": [
             {"language_code": "zh", "level": 5, "is_native": True, "is_target": False},
-            {"language_code": "en", "level": 2, "is_native": False, "is_target": True},
+            {"language_code": "en", "level": 3, "is_native": False, "is_target": True},
         ],
         "avail": [{"weekday": d, "start_local_time": "01:00", "end_local_time": "03:00", "timezone": "Etc/UTC"} for d in [6, 0]],
     },
@@ -76,7 +76,7 @@ SEED_USERS = [
         "email": "test+seed7@gnailuy.com", "handle": "grace", "tz": "Asia/Shanghai",
         "langs": [
             {"language_code": "zh-Hans", "level": 5, "is_native": True, "is_target": False},
-            {"language_code": "en", "level": 2, "is_native": False, "is_target": True},
+            {"language_code": "en", "level": 3, "is_native": False, "is_target": True},
         ],
         "avail": [{"weekday": d, "start_local_time": "16:00", "end_local_time": "22:00", "timezone": "Asia/Shanghai"} for d in range(1, 6)],
     },
