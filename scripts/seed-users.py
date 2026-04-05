@@ -23,7 +23,7 @@ DEFAULT_API = "http://localhost:6176/api/v1"
 # ---------------------------------------------------------------------------
 SEED_USERS = [
     {
-        "email": "test+seed1@gnailuy.com", "handle": "alice", "tz": "Etc/UTC",
+        "email": "test+seed1@example.com", "handle": "alice", "tz": "Etc/UTC",
         "langs": [
             {"language_code": "en", "level": 5, "is_native": True, "is_target": False},
             {"language_code": "zh", "level": 2, "is_native": False, "is_target": True},
@@ -31,7 +31,7 @@ SEED_USERS = [
         "avail": [{"weekday": d, "start_local_time": "08:00", "end_local_time": "20:00", "timezone": "Etc/UTC"} for d in range(1, 6)],
     },
     {
-        "email": "test+seed2@gnailuy.com", "handle": "bob", "tz": "Asia/Shanghai",
+        "email": "test+seed2@example.com", "handle": "bob", "tz": "Asia/Shanghai",
         "langs": [
             {"language_code": "zh", "level": 5, "is_native": True, "is_target": False},
             {"language_code": "en", "level": 3, "is_native": False, "is_target": True},
@@ -39,7 +39,7 @@ SEED_USERS = [
         "avail": [{"weekday": d, "start_local_time": "16:00", "end_local_time": "23:59", "timezone": "Asia/Shanghai"} for d in range(1, 6)],
     },
     {
-        "email": "test+seed3@gnailuy.com", "handle": "carlos", "tz": "America/Sao_Paulo",
+        "email": "test+seed3@example.com", "handle": "carlos", "tz": "America/Sao_Paulo",
         "langs": [
             {"language_code": "pt-BR", "level": 5, "is_native": True, "is_target": False},
             {"language_code": "es", "level": 5, "is_native": True, "is_target": False},
@@ -49,7 +49,7 @@ SEED_USERS = [
         "avail": [{"weekday": d, "start_local_time": "09:00", "end_local_time": "18:00", "timezone": "America/Sao_Paulo"} for d in [1, 3, 5]],
     },
     {
-        "email": "test+seed4@gnailuy.com", "handle": "diana", "tz": "Etc/UTC",
+        "email": "test+seed4@example.com", "handle": "diana", "tz": "Etc/UTC",
         "langs": [
             {"language_code": "en", "level": 5, "is_native": True, "is_target": False},
             {"language_code": "pt", "level": 2, "is_native": False, "is_target": True},
@@ -57,7 +57,7 @@ SEED_USERS = [
         "avail": [{"weekday": d, "start_local_time": "02:00", "end_local_time": "04:00", "timezone": "Etc/UTC"} for d in [6, 0]],
     },
     {
-        "email": "test+seed5@gnailuy.com", "handle": "eve", "tz": "Etc/UTC",
+        "email": "test+seed5@example.com", "handle": "eve", "tz": "Etc/UTC",
         "langs": [
             {"language_code": "zh", "level": 5, "is_native": True, "is_target": False},
             {"language_code": "en", "level": 3, "is_native": False, "is_target": True},
@@ -65,7 +65,7 @@ SEED_USERS = [
         "avail": [{"weekday": d, "start_local_time": "01:00", "end_local_time": "03:00", "timezone": "Etc/UTC"} for d in [6, 0]],
     },
     {
-        "email": "test+seed6@gnailuy.com", "handle": "frank", "tz": "Etc/UTC",
+        "email": "test+seed6@example.com", "handle": "frank", "tz": "Etc/UTC",
         "langs": [
             {"language_code": "en", "level": 5, "is_native": True, "is_target": False},
             {"language_code": "zh", "level": 1, "is_native": False, "is_target": True},
@@ -73,7 +73,7 @@ SEED_USERS = [
         "avail": [{"weekday": d, "start_local_time": "07:00", "end_local_time": "09:05", "timezone": "Etc/UTC"} for d in [1, 3]],
     },
     {
-        "email": "test+seed7@gnailuy.com", "handle": "grace", "tz": "Asia/Shanghai",
+        "email": "test+seed7@example.com", "handle": "grace", "tz": "Asia/Shanghai",
         "langs": [
             {"language_code": "zh-Hans", "level": 5, "is_native": True, "is_target": False},
             {"language_code": "en", "level": 3, "is_native": False, "is_target": True},
@@ -81,7 +81,7 @@ SEED_USERS = [
         "avail": [{"weekday": d, "start_local_time": "16:00", "end_local_time": "22:00", "timezone": "Asia/Shanghai"} for d in range(1, 6)],
     },
     {
-        "email": "test+seed8@gnailuy.com", "handle": "hiro", "tz": "Asia/Tokyo",
+        "email": "test+seed8@example.com", "handle": "hiro", "tz": "Asia/Tokyo",
         "langs": [
             {"language_code": "ja", "level": 5, "is_native": True, "is_target": False},
             {"language_code": "ko", "level": 1, "is_native": False, "is_target": True},
@@ -89,7 +89,7 @@ SEED_USERS = [
         "avail": [{"weekday": d, "start_local_time": "10:00", "end_local_time": "18:00", "timezone": "Asia/Tokyo"} for d in [1, 3]],
     },
     {
-        "email": "test+seed9@gnailuy.com", "handle": "ivan", "tz": "Etc/UTC",
+        "email": "test+seed9@example.com", "handle": "ivan", "tz": "Etc/UTC",
         "langs": [
             {"language_code": "en", "level": 5, "is_native": True, "is_target": False},
             {"language_code": "zh", "level": 2, "is_native": False, "is_target": True},
@@ -97,7 +97,7 @@ SEED_USERS = [
         "avail": [{"weekday": d, "start_local_time": "08:00", "end_local_time": "20:00", "timezone": "Etc/UTC"} for d in range(1, 4)],
     },
     {
-        "email": "test+seed10@gnailuy.com", "handle": "julia", "tz": "Asia/Shanghai",
+        "email": "test+seed10@example.com", "handle": "julia", "tz": "Asia/Shanghai",
         "not_discoverable": True,
         "langs": [
             {"language_code": "zh", "level": 5, "is_native": True, "is_target": False},
@@ -106,7 +106,7 @@ SEED_USERS = [
         "avail": [{"weekday": d, "start_local_time": "10:00", "end_local_time": "18:00", "timezone": "Asia/Shanghai"} for d in [1, 2]],
     },
     {
-        "email": "test+seed11@gnailuy.com", "handle": "kevin", "tz": "America/New_York",
+        "email": "test+seed11@example.com", "handle": "kevin", "tz": "America/New_York",
         "langs": [
             {"language_code": "en", "level": 5, "is_native": True, "is_target": False},
             {"language_code": "zh", "level": 2, "is_native": False, "is_target": True},
@@ -115,7 +115,7 @@ SEED_USERS = [
         "avail": [{"weekday": d, "start_local_time": "09:00", "end_local_time": "17:00", "timezone": "America/New_York"} for d in range(1, 6)],
     },
     {
-        "email": "test+seed12@gnailuy.com", "handle": "luna", "tz": "America/Sao_Paulo",
+        "email": "test+seed12@example.com", "handle": "luna", "tz": "America/Sao_Paulo",
         "langs": [
             {"language_code": "pt-BR", "level": 5, "is_native": True, "is_target": False},
             {"language_code": "zh-Hans", "level": 4, "is_native": False, "is_target": False},

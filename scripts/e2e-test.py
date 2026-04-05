@@ -43,7 +43,7 @@ def authl(uid: str, lang: str) -> dict:
 
 
 def fresh_email() -> str:
-    return f"test+e2e{int(time.time()*1000)}@gnailuy.com"
+    return f"test+e2e{int(time.time()*1000)}@example.com"
 
 
 def fresh_handle() -> str:
@@ -78,12 +78,12 @@ def seed_uid(api: str, handle: str) -> str:
     if handle in _seed_cache:
         return _seed_cache[handle]
     seed_emails = {
-        "alice": "test+seed1@gnailuy.com", "bob": "test+seed2@gnailuy.com",
-        "carlos": "test+seed3@gnailuy.com", "diana": "test+seed4@gnailuy.com",
-        "eve": "test+seed5@gnailuy.com", "frank": "test+seed6@gnailuy.com",
-        "grace": "test+seed7@gnailuy.com", "hiro": "test+seed8@gnailuy.com",
-        "ivan": "test+seed9@gnailuy.com", "julia": "test+seed10@gnailuy.com",
-        "kevin": "test+seed11@gnailuy.com", "luna": "test+seed12@gnailuy.com",
+        "alice": "test+seed1@example.com", "bob": "test+seed2@example.com",
+        "carlos": "test+seed3@example.com", "diana": "test+seed4@example.com",
+        "eve": "test+seed5@example.com", "frank": "test+seed6@example.com",
+        "grace": "test+seed7@example.com", "hiro": "test+seed8@example.com",
+        "ivan": "test+seed9@example.com", "julia": "test+seed10@example.com",
+        "kevin": "test+seed11@example.com", "luna": "test+seed12@example.com",
     }
     uid = register(api, seed_emails[handle])
     _seed_cache[handle] = uid

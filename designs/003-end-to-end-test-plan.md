@@ -11,7 +11,7 @@ End-to-end coverage for the current API feature set: health, authentication, pro
 ## 2. Test Environment
 - API running locally on port 6176
 - Postgres dev database
-- Base URL: `https://test.gnailuy.com/api/v1`
+- Base URL: `https://test.example.com/api/v1`
 - Localization via `Accept-Language` (run localization assertions in **English**, **Chinese**, and **Portuguese**)
 
 ## 2.1 Seed Data
@@ -40,7 +40,7 @@ Each test group below lists the seed users it requires. When setting up a new te
 
 | Tests | Description |
 |-------|-------------|
-| §3 Health, §4 Auth, §5 Profile & Handle, §6 Languages, §7 Availability, §8 Discoverable Flag | Each test creates a fresh account (`test+<timestamp>@gnailuy.com`). No seed data needed. |
+| §3 Health, §4 Auth, §5 Profile & Handle, §6 Languages, §7 Availability, §8 Discoverable Flag | Each test creates a fresh account (`test+<timestamp>@example.com`). No seed data needed. |
 
 ### Group B: Basic Discovery & Matching
 
@@ -110,18 +110,18 @@ Each test group below lists the seed users it requires. When setting up a new te
 
 | # | Handle | Email | Native | Targets | Key Trait |
 |---|--------|-------|--------|---------|-----------|
-| 1 | alice | test+seed1@gnailuy.com | en | zh | Primary test requester |
-| 2 | bob | test+seed2@gnailuy.com | zh | en | Primary test recipient; blocks Ivan |
-| 3 | carlos | test+seed3@gnailuy.com | pt-BR, es | en, zh | Multi-lang; bridge match test |
-| 4 | diana | test+seed4@gnailuy.com | en | pt | No time overlap with others |
-| 5 | eve | test+seed5@gnailuy.com | zh | en | No availability overlap with Alice |
-| 6 | frank | test+seed6@gnailuy.com | en | zh | Minimal overlap (65 min) with Bob |
-| 7 | grace | test+seed7@gnailuy.com | zh-Hans | en | Base-language matching test |
-| 8 | hiro | test+seed8@gnailuy.com | ja | ko | Rare language — no matches |
-| 9 | ivan | test+seed9@gnailuy.com | en | zh | Blocked by Bob |
-| 10 | julia | test+seed10@gnailuy.com | zh | en | NOT discoverable |
-| 11 | kevin | test+seed11@gnailuy.com | en | zh, pt | Multi-target language match |
-| 12 | luna | test+seed12@gnailuy.com | pt-BR, zh-Hans (adv) | en | Multi-teach language match |
+| 1 | alice | test+seed1@example.com | en | zh | Primary test requester |
+| 2 | bob | test+seed2@example.com | zh | en | Primary test recipient; blocks Ivan |
+| 3 | carlos | test+seed3@example.com | pt-BR, es | en, zh | Multi-lang; bridge match test |
+| 4 | diana | test+seed4@example.com | en | pt | No time overlap with others |
+| 5 | eve | test+seed5@example.com | zh | en | No availability overlap with Alice |
+| 6 | frank | test+seed6@example.com | en | zh | Minimal overlap (65 min) with Bob |
+| 7 | grace | test+seed7@example.com | zh-Hans | en | Base-language matching test |
+| 8 | hiro | test+seed8@example.com | ja | ko | Rare language — no matches |
+| 9 | ivan | test+seed9@example.com | en | zh | Blocked by Bob |
+| 10 | julia | test+seed10@example.com | zh | en | NOT discoverable |
+| 11 | kevin | test+seed11@example.com | en | zh, pt | Multi-target language match |
+| 12 | luna | test+seed12@example.com | pt-BR, zh-Hans (adv) | en | Multi-teach language match |
 
 ## 3. Health
 1. `GET /healthz` returns `{ ok: true }` and build metadata.
