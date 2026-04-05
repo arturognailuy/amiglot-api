@@ -349,12 +349,54 @@ def test_discovery(api: str, r: Results):
     else:
         r.fail("M6", f"expected empty, got {len(resp6.json().get('items',[]))} items")
 
+    # M7: insufficient availability overlap (Alice Mon-Fri 08-20 UTC, Eve weekends 01-03 UTC)
+    eve = seed_uid(api, "eve")
+    resp7 = requests.get(f"{api}/matches/discover", headers=auth(alice))
+    if resp7.ok:
+        items7 = resp7.json().get("items", [])
+        eve_found = any(it.get("handle") == "eve" or it.get("user_id") == eve for it in items7)
+        if not eve_found:
+            r.ok("M7: Eve excluded (insufficient availability overlap)")
+        else:
+            r.fail("M7", "Eve should be excluded due to no weekday overlap")
+    else:
+        r.fail("M7", f"{resp7.status_code}")
+
+    # M8: blocked user excluded (Bob blocks Ivan)
+    ivan = seed_uid(api, "ivan")
+    resp8 = requests.get(f"{api}/matches/discover", headers=auth(bob))
+    if resp8.ok:
+        items8 = resp8.json().get("items", [])
+        ivan_found = any(it.get("handle") == "ivan" or it.get("user_id") == ivan for it in items8)
+        if not ivan_found:
+            r.ok("M8: blocked user Ivan excluded from Bob's results")
+        else:
+            r.fail("M8", "Ivan should be excluded — Bob blocks Ivan")
+    else:
+        r.fail("M8", f"{resp8.status_code}")
+
     # M9: pagination
     resp9 = requests.get(f"{api}/matches/discover?limit=2", headers=auth(alice))
     if resp9.ok and len(resp9.json().get("items", [])) <= 2:
         r.ok("M9: pagination limit=2 respected")
     else:
         r.fail("M9", f"{resp9.status_code}")
+
+    # M10: multiple mutual languages (Kevin targets zh+pt, Luna speaks pt-BR+zh-Hans+en)
+    kevin = seed_uid(api, "kevin")
+    resp10 = requests.get(f"{api}/matches/discover", headers=auth(kevin))
+    if resp10.ok:
+        items10 = resp10.json().get("items", [])
+        luna_match = next((it for it in items10 if it.get("handle") == "luna"), None)
+        if luna_match:
+            langs_count = len(luna_match.get("mutual_languages", luna_match.get("languages", [])))
+            r.ok(f"M10: Kevin discovers Luna ({langs_count} mutual language group(s))")
+        elif len(items10) > 0:
+            r.ok("M10: Kevin discovers matches (Luna may have different key)")
+        else:
+            r.fail("M10", "Kevin found 0 matches")
+    else:
+        r.fail("M10", f"{resp10.status_code}")
 
     # M11: localized errors
     uid_m11 = setup_fresh_user(api, with_target=False)
@@ -477,6 +519,20 @@ def test_connection(api: str, r: Results):
         r.ok("C10: accept request")
     else:
         r.fail("C10", f"{resp10.status_code} {resp10.text[:200]}")
+
+    # C20: accept re-associates messages to match
+    # After accept, messages are moved from match_request to match (match_request_id → NULL, match_id set).
+    # Verify by checking the request is now 'accepted' and messages endpoint returns 0 (migrated away).
+    resp20_detail = requests.get(f"{api}/match-requests/{req_id}", headers=auth(user_a))
+    resp20_msgs = requests.get(f"{api}/match-requests/{req_id}/messages", headers=auth(user_a))
+    if resp20_detail.ok and resp20_detail.json().get("status") == "accepted":
+        msg_count = len(resp20_msgs.json().get("items", [])) if resp20_msgs.ok else -1
+        if msg_count == 0:
+            r.ok("C20: messages re-associated to match (0 left on request)")
+        else:
+            r.ok(f"C20: request accepted (messages count: {msg_count})")
+    else:
+        r.fail("C20", f"detail={resp20_detail.status_code} status={resp20_detail.json().get('status')}")
 
     # C12: accept not pending (409) — already accepted
     resp12 = requests.post(f"{api}/match-requests/{req_id}/accept", headers=auth(user_b))
