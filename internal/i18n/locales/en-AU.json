@@ -53,5 +53,18 @@
   "errors.failed_generate_access_token": "failed to generate access token",
   "errors.profile_incomplete": "Please complete your profile before searching for partners.",
   "errors.no_target_languages": "Please add at least one language you want to learn.",
-  "errors.internal_server_error": "An internal error occurred. Please try again."
+  "errors.internal_server_error": "An internal error occurred. Please try again.",
+  "errors.self_request": "You cannot send a connection request to yourself.",
+  "errors.user_not_found": "User not found.",
+  "errors.request_exists": "A pending connection request already exists.",
+  "errors.already_matched": "You are already connected with this user.",
+  "errors.user_blocked": "This action is not available.",
+  "errors.not_recipient": "Only the recipient can perform this action.",
+  "errors.not_requester": "Only the requester can perform this action.",
+  "errors.not_pending": "This request is no longer pending.",
+  "errors.not_participant": "You are not part of this connection request.",
+  "errors.message_limit": "You have reached the message limit for this request.",
+  "errors.message_required": "Message body is required.",
+  "errors.message_too_long": "Message is too long.",
+  "errors.request_not_found": "Connection request not found."
 }

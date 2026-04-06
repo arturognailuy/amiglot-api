@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/gnailuy/amiglot-api/internal/config"
+	"github.com/gnailuy/amiglot-api/internal/service"
 )
 
 func TestDiscoverEndpoint_NoAuth(t *testing.T) {
@@ -147,5 +148,43 @@ func TestDiscoverEndpoint_EmptyResults(t *testing.T) {
 	}
 	if len(body.Items) != 0 {
 		t.Errorf("expected 0 items, got %d", len(body.Items))
+	}
+}
+
+func TestDiscoverHelpers(t *testing.T) {
+	// toMatchLanguagePayloads
+	langs := toMatchLanguagePayloads(nil)
+	if len(langs) != 0 {
+		t.Errorf("expected empty, got %d", len(langs))
+	}
+	langs = toMatchLanguagePayloads([]service.MatchLanguage{
+		{LanguageCode: "en", Level: 5, IsNative: true, LearnerLevel: 3},
+	})
+	if len(langs) != 1 || langs[0].LanguageCode != "en" {
+		t.Errorf("unexpected langs: %+v", langs)
+	}
+
+	// toBridgeLanguagePayloads
+	bridges := toBridgeLanguagePayloads(nil)
+	if len(bridges) != 0 {
+		t.Errorf("expected empty, got %d", len(bridges))
+	}
+	bridges = toBridgeLanguagePayloads([]service.BridgeLanguage{
+		{LanguageCode: "es", Level: 4},
+	})
+	if len(bridges) != 1 {
+		t.Errorf("expected 1, got %d", len(bridges))
+	}
+
+	// toOverlapSlotPayloads
+	slots := toOverlapSlotPayloads(nil)
+	if len(slots) != 0 {
+		t.Errorf("expected empty, got %d", len(slots))
+	}
+	slots = toOverlapSlotPayloads([]service.OverlapSlot{
+		{Weekday: 1, StartUTC: "09:00", EndUTC: "10:00", OverlapMinutes: 60},
+	})
+	if len(slots) != 1 {
+		t.Errorf("expected 1, got %d", len(slots))
 	}
 }

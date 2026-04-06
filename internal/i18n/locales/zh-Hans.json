@@ -53,5 +53,18 @@
   "errors.failed_generate_access_token": "生成访问令牌失败",
   "errors.profile_incomplete": "请先完善个人资料再搜索伙伴。",
   "errors.no_target_languages": "请至少添加一种想要学习的语言。",
-  "errors.internal_server_error": "服务器内部错误，请重试。"
+  "errors.internal_server_error": "服务器内部错误，请重试。",
+  "errors.self_request": "您不能向自己发送连接请求。",
+  "errors.user_not_found": "用户未找到。",
+  "errors.request_exists": "已存在待处理的连接请求。",
+  "errors.already_matched": "您已与此用户建立连接。",
+  "errors.user_blocked": "此操作不可用。",
+  "errors.not_recipient": "只有接收方可以执行此操作。",
+  "errors.not_requester": "只有请求方可以执行此操作。",
+  "errors.not_pending": "此请求不再处于待处理状态。",
+  "errors.not_participant": "您不是此连接请求的参与者。",
+  "errors.message_limit": "您已达到此请求的消息限制。",
+  "errors.message_required": "消息内容不能为空。",
+  "errors.message_too_long": "消息过长。",
+  "errors.request_not_found": "连接请求未找到。"
 }

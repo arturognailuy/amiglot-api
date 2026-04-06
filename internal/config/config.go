@@ -8,12 +8,14 @@ import (
 
 // Config holds runtime configuration.
 type Config struct {
-	Port                   string
-	DatabaseURL            string
-	Env                    string
-	MagicLinkBaseURL       string
-	MagicLinkTTL           time.Duration
-	MatchMinOverlapMinutes int
+	Port                      string
+	DatabaseURL               string
+	Env                       string
+	MagicLinkBaseURL          string
+	MagicLinkTTL              time.Duration
+	MatchMinOverlapMinutes    int
+	PreMatchMessageLimit      int
+	MatchRequestMessageMaxLen int
 }
 
 // Load reads configuration from environment variables.
@@ -49,12 +51,28 @@ func Load() Config {
 		}
 	}
 
+	preMatchMsgLimit := 5
+	if raw := os.Getenv("PRE_MATCH_MESSAGE_LIMIT"); raw != "" {
+		if value, err := strconv.Atoi(raw); err == nil && value > 0 {
+			preMatchMsgLimit = value
+		}
+	}
+
+	matchReqMsgMaxLen := 500
+	if raw := os.Getenv("MATCH_REQUEST_MESSAGE_MAX_LENGTH"); raw != "" {
+		if value, err := strconv.Atoi(raw); err == nil && value > 0 {
+			matchReqMsgMaxLen = value
+		}
+	}
+
 	return Config{
-		Port:                   port,
-		DatabaseURL:            os.Getenv("DATABASE_URL"),
-		Env:                    env,
-		MagicLinkBaseURL:       magicLinkBaseURL,
-		MagicLinkTTL:           magicLinkTTL,
-		MatchMinOverlapMinutes: minOverlap,
+		Port:                      port,
+		DatabaseURL:               os.Getenv("DATABASE_URL"),
+		Env:                       env,
+		MagicLinkBaseURL:          magicLinkBaseURL,
+		MagicLinkTTL:              magicLinkTTL,
+		MatchMinOverlapMinutes:    minOverlap,
+		PreMatchMessageLimit:      preMatchMsgLimit,
+		MatchRequestMessageMaxLen: matchReqMsgMaxLen,
 	}
 }

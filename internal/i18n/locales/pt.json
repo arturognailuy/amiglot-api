@@ -53,5 +53,18 @@
   "errors.failed_generate_access_token": "falha ao gerar token de acesso",
   "errors.profile_incomplete": "Por favor, complete seu perfil antes de buscar parceiros.",
   "errors.no_target_languages": "Por favor, adicione pelo menos um idioma que deseja aprender.",
-  "errors.internal_server_error": "Ocorreu um erro interno. Por favor, tente novamente."
+  "errors.internal_server_error": "Ocorreu um erro interno. Por favor, tente novamente.",
+  "errors.self_request": "Você não pode enviar uma solicitação de conexão para si mesmo.",
+  "errors.user_not_found": "Usuário não encontrado.",
+  "errors.request_exists": "Já existe uma solicitação de conexão pendente.",
+  "errors.already_matched": "Você já está conectado com este usuário.",
+  "errors.user_blocked": "Esta ação não está disponível.",
+  "errors.not_recipient": "Somente o destinatário pode realizar esta ação.",
+  "errors.not_requester": "Somente o solicitante pode realizar esta ação.",
+  "errors.not_pending": "Esta solicitação não está mais pendente.",
+  "errors.not_participant": "Você não faz parte desta solicitação de conexão.",
+  "errors.message_limit": "Você atingiu o limite de mensagens para esta solicitação.",
+  "errors.message_required": "O corpo da mensagem é obrigatório.",
+  "errors.message_too_long": "A mensagem é muito longa.",
+  "errors.request_not_found": "Solicitação de conexão não encontrada."
 }

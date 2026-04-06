@@ -13,7 +13,7 @@ This document is the single source of truth for backend architecture and coding 
 - Huma (HTTP framework)
 - PostgreSQL with pgx + sqlc, migrations via goose
 - API port: 6176
-- Base URL path prefix: `/api/v1` (dev via Caddy: `https://test.gnailuy.com/api/v1`)
+- Base URL path prefix: `/api/v1` (dev via Caddy: `https://app.example.com/api/v1`)
 
 ## 2. Data & Schema Conventions
 - **Primary keys:** UUID (`gen_random_uuid()`)

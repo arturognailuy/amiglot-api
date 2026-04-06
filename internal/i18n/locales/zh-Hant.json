@@ -53,5 +53,18 @@
   "errors.failed_generate_access_token": "生成存取令牌失敗",
   "errors.profile_incomplete": "請先完善個人資料再搜尋夥伴。",
   "errors.no_target_languages": "請至少添加一種想要學習的語言。",
-  "errors.internal_server_error": "伺服器內部錯誤，請重試。"
+  "errors.internal_server_error": "伺服器內部錯誤，請重試。",
+  "errors.self_request": "您不能向自己發送連接請求。",
+  "errors.user_not_found": "用戶未找到。",
+  "errors.request_exists": "已存在待處理的連接請求。",
+  "errors.already_matched": "您已與此用戶建立連接。",
+  "errors.user_blocked": "此操作不可用。",
+  "errors.not_recipient": "只有接收方可以執行此操作。",
+  "errors.not_requester": "只有請求方可以執行此操作。",
+  "errors.not_pending": "此請求不再處於待處理狀態。",
+  "errors.not_participant": "您不是此連接請求的參與者。",
+  "errors.message_limit": "您已達到此請求的消息限制。",
+  "errors.message_required": "消息內容不能為空。",
+  "errors.message_too_long": "消息過長。",
+  "errors.request_not_found": "連接請求未找到。"
 }

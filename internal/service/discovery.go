@@ -79,6 +79,10 @@ type DiscoverResult struct {
 
 // Discover returns paginated match results for the given user.
 func (s *DiscoveryService) Discover(ctx context.Context, userID string, cursor *string, limit int) (*DiscoverResult, error) {
+	if userID == "" {
+		return nil, &Error{Status: 401, Key: "errors.missing_user_id"}
+	}
+
 	if s.repo == nil || s.repo.Pool() == nil {
 		return nil, &Error{Status: 503, Key: "errors.database_unavailable"}
 	}
