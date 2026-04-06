@@ -11,7 +11,7 @@ End-to-end coverage for the current API feature set: health, authentication, pro
 ## 2. Test Environment
 - API running locally on port 6176
 - Postgres dev database
-- Base URL: `https://test.example.com/api/v1`
+- Base URL: `https://app.example.com/api/v1`
 - Localization via `Accept-Language` (run localization assertions in **English**, **Chinese**, and **Portuguese**)
 
 ## 2.1 Seed Data
