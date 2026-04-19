@@ -1,0 +1,51 @@
+---
+domain: Conventions
+status: Active
+entry_points: []
+dependencies: []
+---
+
+# Amiglot API — Documentation Index
+
+Discovery index for all project documentation. See the reading chains below for guided paths.
+
+## Architecture
+
+| Document | Description |
+|----------|-------------|
+| [architecture/guidelines.md](architecture/guidelines.md) | Backend architecture, coding standards, layer separation |
+
+## Designs
+
+| Document | Description |
+|----------|-------------|
+| [designs/database-schema.md](designs/database-schema.md) | Database schema — tables, constraints, migration notes |
+| [designs/api-contract.md](designs/api-contract.md) | API endpoint contract, auth, validation, monitoring |
+| [designs/discovery-matching.md](designs/discovery-matching.md) | Discovery endpoint design and matching rules |
+| [designs/discovery-matching-query.md](designs/discovery-matching-query.md) | SQL CTE query and index strategy for matching |
+| [designs/connection-handshake.md](designs/connection-handshake.md) | Connection state machine and handshake endpoints |
+
+## Workflows
+
+| Document | Description |
+|----------|-------------|
+| [workflows/unit-test-plan.md](workflows/unit-test-plan.md) | Unit test baseline and coverage priorities |
+| [workflows/e2e-test-plan.md](workflows/e2e-test-plan.md) | End-to-end test plan with seed data and test groups |
+
+## Reading Chains
+
+### New Developer
+1. [Architecture Guidelines](architecture/guidelines.md) — understand layers and conventions
+2. [Database Schema](designs/database-schema.md) — data model
+3. [API Contract](designs/api-contract.md) — endpoints and validation
+4. [Unit Test Plan](workflows/unit-test-plan.md) — testing approach
+
+### Feature Work (Discovery & Matching)
+1. [Discovery Matching](designs/discovery-matching.md) — endpoint and matching rules
+2. [Matching Query](designs/discovery-matching-query.md) — SQL CTE and indexes
+3. [E2E Test Plan](workflows/e2e-test-plan.md) — test scenarios
+
+### Feature Work (Connection Handshake)
+1. [Connection Handshake](designs/connection-handshake.md) — state machine and endpoints
+2. [Database Schema](designs/database-schema.md) — match_requests/matches/messages tables
+3. [E2E Test Plan](workflows/e2e-test-plan.md) — connection test groups
