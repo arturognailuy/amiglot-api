@@ -20,6 +20,7 @@ Design for `GET /api/v1/matches/discover` — the primary discovery endpoint ret
 |----------|-------------|
 | [Database Schema](database-schema.md) | Tables queried by the matching CTE |
 | [Architecture Guidelines](../architecture/guidelines.md) | Handler → Service → Repository layers |
+| [Discovery Dashboard (UI)](https://github.com/gnailuy/amiglot-ui/blob/main/.aidoc/designs/discovery-dashboard.md) | UI dashboard that consumes these matching results |
 | [API Contract](api-contract.md) | Shared endpoint conventions |
 | [Matching Query](discovery-matching-query.md) | Full SQL CTE and index strategy |
 | [Connection Handshake](connection-handshake.md) | Next step after discovery |

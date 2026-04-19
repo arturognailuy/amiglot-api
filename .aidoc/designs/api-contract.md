@@ -18,6 +18,7 @@ API endpoint contract, authentication, validation rules, and operational concern
 |----------|-------------|
 | [Database Schema](database-schema.md) | Tables backing these endpoints |
 | [Architecture Guidelines](../architecture/guidelines.md) | Layer separation and error handling patterns |
+| [Technical Specification (UI)](https://github.com/gnailuy/amiglot-ui/blob/main/.aidoc/designs/technical-specification.md) | Client-side view of this API contract |
 | [Discovery Matching](discovery-matching.md) | Discovery endpoint design |
 | [Connection Handshake](connection-handshake.md) | Connection endpoint design |
 

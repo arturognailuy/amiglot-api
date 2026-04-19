@@ -21,6 +21,7 @@ State machine for connection requests: `None → Pending → Accepted/Declined/C
 |----------|-------------|
 | [Database Schema](database-schema.md) | match_requests, matches, messages tables |
 | [Discovery Matching](discovery-matching.md) | Discovery feeds into connection requests |
+| [Connection Handshake (UI)](https://github.com/gnailuy/amiglot-ui/blob/main/.aidoc/designs/connection-handshake.md) | UI flows and components for this state machine |
 | [Architecture Guidelines](../architecture/guidelines.md) | Layer separation pattern |
 | [API Contract](api-contract.md) | Shared endpoint conventions |
 
