@@ -62,4 +62,4 @@ CREATE INDEX IF NOT EXISTS user_blocks_reverse_idx
 
 Migration `00006_discovery_indexes.sql` adds the indexes above. No schema changes required.
 
-<!-- TODO: verify the full CTE query is in internal/repository/discovery.go — check sqlc generated code vs raw SQL -->
+The full CTE query is defined as a raw SQL constant in `internal/repository/discovery.go` (not sqlc-generated). A separate overlap-details query lives in the same file.

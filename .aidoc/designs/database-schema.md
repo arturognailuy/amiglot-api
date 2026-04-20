@@ -2,7 +2,8 @@
 domain: Designs
 status: Active
 entry_points:
-  - internal/repository/queries.sql
+  - internal/db/sqlc/queries.sql
+  - db/migrations/
 dependencies:
   - .aidoc/architecture/guidelines.md
 ---
@@ -55,4 +56,4 @@ Supports the V1 feature set: auth, profiles with languages/availability, discove
 - When backfilling `sort_order`, use existing `created_at ASC` row order.
 - For availability, assign same order to slots sharing `(start_local_time, end_local_time, timezone)`.
 
-<!-- TODO: verify — are all migration files in `migrations/` or `db/migrations/`? Check actual directory structure. -->
+Migration files live in `db/migrations/` (goose format, sequential numbering).
