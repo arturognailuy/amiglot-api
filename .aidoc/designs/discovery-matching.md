@@ -32,13 +32,51 @@ Discovery is the primary user-facing surface for finding language exchange partn
 ## Endpoint Contract
 
 ```
-GET /api/v1/matches/discover?cursor=<opaque>&limit=<int>
+GET /api/v1/matches/discover
 Authorization: Bearer <token>
 Accept-Language: <locale>
 ```
 
-- `limit` defaults to 20, max 50. `cursor` is opaque for pagination.
-- Response includes `items[]` with: `user_id`, `handle`, `country_code`, age (from birth_year/month), `mutual_teach[]`, `mutual_learn[]`, `bridge_languages[]`, `availability_overlap[]`, `total_overlap_minutes`.
+**Query Parameters:**
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `cursor` | string | null | Opaque pagination cursor |
+| `limit` | int | 20 | Page size (max 50) |
+
+**Response (200):**
+
+```json
+{
+  "items": [
+    {
+      "user_id": "uuid",
+      "handle": "maria",
+      "country_code": "MX",
+      "age": 24,
+      "mutual_teach": [
+        { "language_code": "es", "level": 5, "is_native": true }
+      ],
+      "mutual_learn": [
+        { "language_code": "en", "level": 4, "is_native": false }
+      ],
+      "bridge_languages": [
+        { "language_code": "en", "level": 4 }
+      ],
+      "availability_overlap": [
+        {
+          "weekday": 1,
+          "start_utc": "01:00",
+          "end_utc": "03:00",
+          "overlap_minutes": 120
+        }
+      ],
+      "total_overlap_minutes": 120
+    }
+  ],
+  "next_cursor": "..."
+}
+```
 
 ## Matching Rules (All Must Pass)
 

@@ -32,25 +32,154 @@ The handshake ensures mutual consent before connecting users. Pre-accept messagi
 ## Endpoints
 
 ### POST /api/v1/match-requests
-Send a connection request. Validates: recipient exists and is discoverable, not self, no pending request, no existing match, not blocked. Optional `initial_message` (max 500 chars).
+
+Send a connection request. Validates: recipient exists and is discoverable, not self, no pending request, no existing match, not blocked.
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `recipient_id` | uuid | Yes | Target user ID |
+| `initial_message` | string | No | Optional message (max 500 chars) |
+
+**Response (201):**
+
+```json
+{
+  "id": "uuid",
+  "requester_id": "uuid",
+  "recipient_id": "uuid",
+  "status": "pending",
+  "initial_message": "Hi! I'd love to practice Spanish with you.",
+  "created_at": "2026-03-28T12:00:00Z"
+}
+```
 
 ### GET /api/v1/match-requests
-List requests. Params: `direction` (incoming/outgoing), `status` (pending/accepted/declined/canceled/all), `cursor`, `limit`. Returns request cards with partner info, message count, last message time.
+
+List connection requests (incoming and outgoing).
+
+**Query Parameters:**
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `direction` | string | `incoming` | `incoming` or `outgoing` |
+| `status` | string | `pending` | `pending`, `accepted`, `declined`, `canceled`, or `all` |
+| `cursor` | string | null | Opaque pagination cursor |
+| `limit` | int | 20 | Page size (max 50) |
+
+**Response (200):**
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "requester": {
+        "user_id": "uuid",
+        "handle": "maria",
+        "country_code": "MX",
+        "age": 24
+      },
+      "recipient": {
+        "user_id": "uuid",
+        "handle": "arturo",
+        "country_code": "CA",
+        "age": 32
+      },
+      "status": "pending",
+      "message_count": 1,
+      "last_message_at": "2026-03-28T12:00:00Z",
+      "created_at": "2026-03-28T12:00:00Z"
+    }
+  ],
+  "next_cursor": "..."
+}
+```
 
 ### GET /api/v1/match-requests/{id}
-Single request detail. Includes `mutual_teach`, `mutual_learn`, `bridge_languages`. Accessible by requester or recipient only.
+
+Single request detail. Accessible by requester or recipient only.
+
+**Response (200):** Same shape as a list item, plus:
+
+```json
+{
+  "mutual_teach": [...],
+  "mutual_learn": [...],
+  "bridge_languages": [...]
+}
+```
 
 ### POST /api/v1/match-requests/{id}/accept
+
 Recipient-only. Transactional: update status → create match (LEAST/GREATEST ordering) → re-associate messages from `match_request_id` to `match_id`.
 
+**Response (200):**
+
+```json
+{ "ok": true, "match_id": "uuid" }
+```
+
 ### POST /api/v1/match-requests/{id}/decline
+
 Recipient-only. Sets status to `declined`.
 
+**Response (200):** `{ "ok": true }`
+
 ### POST /api/v1/match-requests/{id}/cancel
+
 Requester-only. Sets status to `canceled`.
 
-### GET/POST /api/v1/match-requests/{id}/messages
-List or send pre-accept messages. Per-user message limit enforced (`PRE_MATCH_MESSAGE_LIMIT`, default 5). Max body: 500 chars.
+**Response (200):** `{ "ok": true }`
+
+### GET /api/v1/match-requests/{id}/messages
+
+List pre-accept messages. Accessible by requester or recipient.
+
+**Query Parameters:**
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `cursor` | string | null | Opaque pagination cursor |
+| `limit` | int | 20 | Page size (max 50) |
+
+**Response (200):**
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "sender_id": "uuid",
+      "body": "Hi! I'd love to practice Spanish with you.",
+      "created_at": "2026-03-28T12:00:00Z"
+    }
+  ],
+  "next_cursor": "..."
+}
+```
+
+### POST /api/v1/match-requests/{id}/messages
+
+Send a pre-accept message. Per-user message limit enforced (`PRE_MATCH_MESSAGE_LIMIT`, default 5).
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `body` | string | Yes | Message text (max 500 chars) |
+
+**Response (201):**
+
+```json
+{
+  "id": "uuid",
+  "sender_id": "uuid",
+  "body": "Hello! When are you usually free?",
+  "created_at": "2026-03-28T12:01:00Z"
+}
+```
 
 ## Error Codes
 

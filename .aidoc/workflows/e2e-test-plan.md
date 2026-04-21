@@ -62,22 +62,68 @@ Validates the full API stack end-to-end including DB interactions, auth flows, m
 Health, auth, profile, handle, languages, availability, discoverable flag. No seed data needed.
 
 ### Group B: Discovery Happy Paths
-Login as Alice/Kevin. Tests: mutual match, base-language matching, pagination, multiple mutual languages.
+
+| Test | Login As | Description |
+|------|----------|-------------|
+| M1 | Alice | Mutual match happy path (English↔Chinese, overlapping availability) |
+| M5 | Alice | Base-language matching (Alice targets `zh`, Grace speaks `zh-Hans`) |
+| M9 | Alice | Cursor pagination with `limit=2` |
+| M10 | Kevin | Multiple mutual languages (Kevin targets `zh`+`pt`, Luna speaks both) |
 
 ### Group C: Discovery Edge Cases
-Tests: no target languages (422), incomplete profile (403), unauthenticated (401), no matches, insufficient overlap, blocked user excluded.
+
+| Test | Login As | Description |
+|------|----------|-------------|
+| M2 | Fresh account | No target languages → 422 `ERR_NO_TARGET_LANGUAGES` |
+| M3 | Fresh account | Incomplete profile → 403 `ERR_PROFILE_INCOMPLETE` |
+| M4 | None | Unauthenticated → 401 `ERR_AUTH_REQUIRED` |
+| M6 | Hiro | Rare language (ja→ko) — empty results |
+| M7 | Alice | Zero availability overlap with Eve — not matched |
+| M8 | Bob | Blocked user (Ivan) excluded bidirectionally |
 
 ### Group D: Discovery Localization
-Error messages in pt-BR and zh-Hans.
+
+| Test | Login As | Description |
+|------|----------|-------------|
+| M11 | Fresh account | Error messages in pt-BR and zh-Hans |
 
 ### Group E: Connection Happy Paths
-Tests: send request, list incoming/outgoing, request detail, accept, decline, cancel, pre-accept messaging, message re-association, pagination.
+
+| Test | Login As | Description |
+|------|----------|-------------|
+| C1 | Alice | Send connection request to Bob |
+| C7 | Bob | List incoming requests |
+| C8 | Alice | List outgoing requests |
+| C9 | Alice / Bob | View request detail (both participants) |
+| C10 | Bob | Accept request → creates match |
+| C13 | Bob | Decline request |
+| C14 | Alice | Cancel own request |
+| C15 | Bob | Send pre-accept message |
+| C16 | Alice | List pre-accept messages |
+| C20 | Bob | Accept re-associates messages to match |
+| C21 | Bob | Request pagination with multiple incoming |
 
 ### Group F: Connection Error Cases
-Tests: self-request (400), not found (404), duplicate (409), already matched (409), blocked (403), not recipient (403), not pending (409), message limit (429), not participant (403), unauthenticated (401).
+
+| Test | Login As | Description |
+|------|----------|-------------|
+| C2 | Alice | Self-request → 400 `ERR_SELF_REQUEST` |
+| C3 | Alice | Non-existent recipient → 404 `ERR_USER_NOT_FOUND` |
+| C4 | Alice | Duplicate pending request → 409 `ERR_REQUEST_EXISTS` |
+| C5 | Alice | Already matched → 409 `ERR_ALREADY_MATCHED` |
+| C6 | Bob | Blocked user (Ivan) → 403 `ERR_USER_BLOCKED` |
+| C11 | Alice | Requester tries accept → 403 `ERR_NOT_RECIPIENT` |
+| C12 | Bob | Accept non-pending → 409 `ERR_NOT_PENDING` |
+| C17 | Alice | Exceed message limit → 429 `ERR_MESSAGE_LIMIT` |
+| C18 | Alice | Message on accepted request → 409 `ERR_NOT_PENDING` |
+| C19 | Carlos | Unrelated user messages → 403 `ERR_NOT_PARTICIPANT` |
+| C23 | None | Unauthenticated → 401 `ERR_AUTH_REQUIRED` |
 
 ### Group G: Connection Localization
-Error messages in zh-Hans and pt-BR.
+
+| Test | Login As | Description |
+|------|----------|-------------|
+| C22 | Alice | Self-request errors in zh-Hans and pt-BR |
 
 ## Current Status
 
